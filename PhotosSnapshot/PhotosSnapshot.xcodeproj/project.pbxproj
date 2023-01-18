@@ -9,7 +9,7 @@
 /* Begin PBXBuildFile section */
 		1B271C662977C4BA00749F13 /* PhotosList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B271C652977C4BA00749F13 /* PhotosList.swift */; };
 		1B6C6E832977F1BF00A0EF38 /* PhotosFetch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B6C6E822977F1BF00A0EF38 /* PhotosFetch.swift */; };
-		1B6C6E85297813FB00A0EF38 /* PhotosUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B6C6E84297813FB00A0EF38 /* PhotosUtils.swift */; };
+		1B6C6E85297813FB00A0EF38 /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B6C6E84297813FB00A0EF38 /* Utils.swift */; };
 		1B7ED2C42976D016006FC7FD /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7ED2C32976D016006FC7FD /* main.swift */; };
 		1BE1457C297781CD00E9DDE3 /* PhotosAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BE1457B297781CD00E9DDE3 /* PhotosAccess.swift */; };
 /* End PBXBuildFile section */
@@ -29,7 +29,7 @@
 /* Begin PBXFileReference section */
 		1B271C652977C4BA00749F13 /* PhotosList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotosList.swift; sourceTree = "<group>"; };
 		1B6C6E822977F1BF00A0EF38 /* PhotosFetch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotosFetch.swift; sourceTree = "<group>"; };
-		1B6C6E84297813FB00A0EF38 /* PhotosUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotosUtils.swift; sourceTree = "<group>"; };
+		1B6C6E84297813FB00A0EF38 /* Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utils.swift; sourceTree = "<group>"; };
 		1B7ED2C02976D016006FC7FD /* PhotosSnapshot */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = PhotosSnapshot; sourceTree = BUILT_PRODUCTS_DIR; };
 		1B7ED2C32976D016006FC7FD /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		1B7ED2CB2976DE68006FC7FD /* PhotosSnapshot.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = PhotosSnapshot.entitlements; sourceTree = "<group>"; };
@@ -71,7 +71,7 @@
 				1BE1457B297781CD00E9DDE3 /* PhotosAccess.swift */,
 				1B271C652977C4BA00749F13 /* PhotosList.swift */,
 				1B6C6E822977F1BF00A0EF38 /* PhotosFetch.swift */,
-				1B6C6E84297813FB00A0EF38 /* PhotosUtils.swift */,
+				1B6C6E84297813FB00A0EF38 /* Utils.swift */,
 			);
 			path = PhotosSnapshot;
 			sourceTree = "<group>";
@@ -135,7 +135,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1B6C6E85297813FB00A0EF38 /* PhotosUtils.swift in Sources */,
+				1B6C6E85297813FB00A0EF38 /* Utils.swift in Sources */,
 				1B271C662977C4BA00749F13 /* PhotosList.swift in Sources */,
 				1BE1457C297781CD00E9DDE3 /* PhotosAccess.swift in Sources */,
 				1B7ED2C42976D016006FC7FD /* main.swift in Sources */,

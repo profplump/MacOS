@@ -9,15 +9,15 @@
 import Foundation
 import Photos
 
-class PhotosUtils {
+class Utils {
     static func uuid(id: String) -> String {
         /** This UUID matches the one in the Photos Library SQLite DB **/
         return String(id[..<id.firstIndex(of: "/")!])
     }
     
-    func resourcePath(resource: PHAssetResource) -> String {
+    static func resourcePath(resource: PHAssetResource) -> String {
         /** Grab a stable UUID for this asset bundle **/
-        let UUID = PhotosUtils.uuid(id: resource.assetLocalIdentifier)
+        let UUID = Utils.uuid(id: resource.assetLocalIdentifier)
         
         /** Grab the extension from the original import file **/
         let ext = URL(fileURLWithPath: resource.originalFilename).pathExtension.lowercased()

@@ -11,11 +11,9 @@ import Photos
 
 class PhotosFetch {
     private let resourceManager: PHAssetResourceManager
-    private let photosUtils: PhotosUtils
         
     init() {
         resourceManager = PHAssetResourceManager()
-        photosUtils = PhotosUtils()
     }
     
     fileprivate func fetchOptions() -> PHAssetResourceRequestOptions {
@@ -33,22 +31,23 @@ class PhotosFetch {
         let max = min(media.count, 25)
         for i in 0...max-1 {
             let asset = media.object(at: i)
+            let startResourceCount = resourceCount
+
             let resources = PHAssetResource.assetResources(for: asset)
-
-            let valid = findValidResources(resources: resources)
-            if (valid.count < 1) {
-                print("No valid resources for asset: \(PhotosUtils.uuid(id: asset.localIdentifier))")
-                continue
-            }
-
-            for resource in valid {
+            for resource in findValidResources(resources: resources) {
                 do {
                     try await readFile(resource: resource, parentFolder: parentFolder)
                     resourceCount += 1
                 } catch {
-                    print("Failed to fetch: \(PhotosUtils.uuid(id: resource.assetLocalIdentifier)).\(resource.type.rawValue)")
+                    print("Resource fetch error: \(Utils.resourcePath(resource: resource))")
                     errorCount += 1
                 }
+            }
+            
+            // Notice if we did not fetch anything for this asset
+            if (startResourceCount == resourceCount) {
+                print("Fetched 0 resources for asset: \(Utils.uuid(id: asset.localIdentifier))")
+                continue
             }
             assetCount += 1
         }
@@ -59,15 +58,14 @@ class PhotosFetch {
     }
     
     func readFile(resource: PHAssetResource, parentFolder: URL) async throws {
-        let filename = photosUtils.resourcePath(resource: resource)
+        let filename = Utils.resourcePath(resource: resource)
         let dest = URL(fileURLWithPath: filename, relativeTo: parentFolder)
         try FileManager.default.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
 
         /** Do not overwrite **/
         if (FileManager.default.fileExists(atPath: dest.path)) {
             //try FileManager.default.removeItem(at: dest)
-            print("Skipping write to existing file: \(dest)")
-            return
+            throw NSError(domain: "FileExists", code: 1)
         }
 
         try await resourceManager.writeData(for: resource, toFile: dest, options: fetchOptions())
