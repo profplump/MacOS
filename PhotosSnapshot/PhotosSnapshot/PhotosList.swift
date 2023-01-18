@@ -12,10 +12,18 @@ import Photos
 class PhotosList {
     fileprivate func fetchOptions() -> PHFetchOptions {
         let fetchOptions: PHFetchOptions = PHFetchOptions()
-        fetchOptions.includeHiddenAssets = false
+        fetchOptions.includeHiddenAssets = true
+        if (ProcessInfo.processInfo.environment.index(forKey: "NO_HIDDEN") != nil) {
+            print("Excluding hidden assets")
+            fetchOptions.includeHiddenAssets = false
+        }
         fetchOptions.includeAllBurstAssets = false
         fetchOptions.includeAssetSourceTypes = [PHAssetSourceType.typeUserLibrary]
         fetchOptions.wantsIncrementalChangeDetails = false
+        if let value = ProcessInfo.processInfo.environment["FETCH_LIMIT"] {
+            print("Limiting fetch to \(value) assets")
+            fetchOptions.fetchLimit = Int(value)!
+        }
         return fetchOptions;
     }
     

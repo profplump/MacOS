@@ -27,9 +27,8 @@ class PhotosFetch {
         var resourceCount: Int = 0
         var errorCount: Int = 0
 
-        // Override max for testing
-        let max = min(media.count, 25)
-        for i in 0...max-1 {
+        // Fetch valid (usable) resources of every asset
+        for i in 0...media.count-1 {
             let asset = media.object(at: i)
             let startResourceCount = resourceCount
 
@@ -44,7 +43,7 @@ class PhotosFetch {
                 }
             }
             
-            // Notice if we did not fetch anything for this asset
+            // Notice if we did not fetch any resources for this asset
             if (startResourceCount == resourceCount) {
                 print("Fetched 0 resources for asset: \(Utils.uuid(id: asset.localIdentifier))")
                 continue
@@ -52,9 +51,9 @@ class PhotosFetch {
             assetCount += 1
         }
         
-        print("Assets: \(assetCount)")
-        print("Resources: \(resourceCount)")
-        print("Errors: \(errorCount)")
+        // Error statistics so we can tell how things went
+        print("Assets: \(assetCount)/\(media.count - assetCount) success/error")
+        print("Resources: \(resourceCount)/\(errorCount) success/error")
     }
     
     func readFile(resource: PHAssetResource, parentFolder: URL) async throws {
