@@ -41,8 +41,10 @@ if let value = ProcessInfo.processInfo.environment["DATE_STRING"] {
     date = dateFormatter.string(from: Date())
 }
 let parentFolder = URL(fileURLWithPath: outputFolder.path + "/" + date + "/")
+if (!FileManager.default.fileExists(atPath: outputFolder.path, isDirectory: &isDir)) {
+    try FileManager.default.createDirectory(at: parentFolder, withIntermediateDirectories: false)
+}
 print("Writing to folder: \(parentFolder)")
-try FileManager.default.createDirectory(at: parentFolder, withIntermediateDirectories: false)
 
 // Figure out which media types we are listing
 var saveVideos: Bool = false

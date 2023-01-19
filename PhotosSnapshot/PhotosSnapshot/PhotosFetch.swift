@@ -66,10 +66,11 @@ class PhotosFetch {
 
         /** Do not overwrite **/
         if (FileManager.default.fileExists(atPath: dest.path)) {
-            //try FileManager.default.removeItem(at: dest)
-            throw NSError(domain: "FileExists", code: 1)
+            if (ProcessInfo.processInfo.environment.index(forKey: "WARN_EXISTS") != nil) {
+                print("File exists: \(dest)")
+            }
+            return
         }
-
         try await resourceManager.writeData(for: resource, toFile: dest, options: fetchOptions)
     }
     
