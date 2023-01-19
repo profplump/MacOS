@@ -10,16 +10,19 @@ import Foundation
 import Photos
 
 class PhotosFetch {
+    private let fetchOptions: PHAssetResourceRequestOptions
     private let resourceManager: PHAssetResourceManager
         
     init() {
         resourceManager = PHAssetResourceManager()
-    }
-    
-    fileprivate func fetchOptions() -> PHAssetResourceRequestOptions {
-        let fetchOptions = PHAssetResourceRequestOptions()
-        fetchOptions.isNetworkAccessAllowed = true
-        return fetchOptions
+
+        fetchOptions = PHAssetResourceRequestOptions()
+        if (ProcessInfo.processInfo.environment.index(forKey: "NO_NETWORK") != nil) {
+            print("Excluding network assets")
+            fetchOptions.isNetworkAccessAllowed = false
+        } else {
+            fetchOptions.isNetworkAccessAllowed = true
+        }
     }
     
     func fetchAssets(media: PHFetchResult<PHAsset>, parentFolder: URL) async {
@@ -67,7 +70,7 @@ class PhotosFetch {
             throw NSError(domain: "FileExists", code: 1)
         }
 
-        try await resourceManager.writeData(for: resource, toFile: dest, options: fetchOptions())
+        try await resourceManager.writeData(for: resource, toFile: dest, options: fetchOptions)
     }
     
     func findValidResources(resources: [PHAssetResource]) -> [PHAssetResource] {
