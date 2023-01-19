@@ -27,6 +27,11 @@ class PhotosList {
         return fetchOptions;
     }
     
+    func assetByLocalID(uuids: [String]) -> PHFetchResult<PHAsset> {
+        let fetchOptions = fetchOptions()
+        return PHAsset.fetchAssets(withLocalIdentifiers: uuids, options: fetchOptions)
+    }
+    
     func albumByName(albumName: String) -> PHAssetCollection! {
         let fetchOptions = fetchOptions()
         fetchOptions.predicate = NSPredicate(format: "title = %@", albumName)
