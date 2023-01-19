@@ -16,7 +16,7 @@ if (!access.valid()) {
 }
 
 // Figure out where we are writing
-var outputFolder = URL(fileURLWithPath:"hi", relativeTo: FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first)
+var outputFolder = URL(fileURLWithPath:"PhotosSnapshot", relativeTo: FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first)
 if (CommandLine.arguments.count > 1) {
     outputFolder = URL(fileURLWithPath: CommandLine.arguments[1])
 }
@@ -42,9 +42,9 @@ if let value = ProcessInfo.processInfo.environment["DATE_STRING"] {
 }
 let parentFolder = URL(fileURLWithPath: outputFolder.path + "/" + date + "/")
 print("Writing to folder: \(parentFolder)")
-try FileManager.default.createDirectory(at: parentFolder, withIntermediateDirectories: true)
+try FileManager.default.createDirectory(at: parentFolder, withIntermediateDirectories: false)
 
-// Figure out which media types we are fetching
+// Figure out which media types we are listing
 var saveVideos: Bool = false
 var savePhotos: Bool = false
 if let value = ProcessInfo.processInfo.environment["MEDIA_TYPES"] {
