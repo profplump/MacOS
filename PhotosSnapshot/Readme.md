@@ -49,7 +49,7 @@ Where the value of the second and any subsequent arguements are UUIDs as expecte
 PhotosSnapshot supports several environmental variables to control operation at runtime
 
 MEDIA_TYPES
-: Restrict fetch requests to assets with the specified media type. Use P for images and V for videos. Does not apply to UUID-based searches `MEDIA_TYPES="PV"`
+: Restrict fetch requests to assets with the specified media type. Use A for audio, P for images, and V for videos. Does not apply to UUID-based searches `MEDIA_TYPES="APV"`
 
 FETCH_LIMIT
 : Limit fetch requests to the specified number of assets `FETCH_LIMIT=10`

@@ -15,8 +15,7 @@ class PhotosSnapshot {
     let list: PhotosList
     var parentFolder: URL
     var destFolder: URL
-    var saveVideos: Bool
-    var savePhotos: Bool
+    var mediaTypes: [ PHAssetMediaType: Bool ]
     var assetSets: [PHFetchResult<PHAsset>]
     
     init() {
@@ -24,8 +23,7 @@ class PhotosSnapshot {
         list = PhotosList()
         parentFolder = URL(fileURLWithPath:"PhotosSnapshot", relativeTo: FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first)
         destFolder = URL(fileURLWithPath: "", relativeTo: parentFolder)
-        savePhotos = false
-        saveVideos = false
+        mediaTypes = [.audio: true, .image: true, .video: true]
         assetSets = []
     }
 
@@ -51,12 +49,11 @@ class PhotosSnapshot {
             // Find assets with provided assetLocalIDs (i.e. ZUUIDs)
             processUUIDs(args: CommandLine.arguments)
         } else {
-            // List all photo and/or all video assets
-            if (savePhotos) {
-                processAssets(mediaType: .image)
-            }
-            if (saveVideos) {
-                processAssets(mediaType: .video)
+            // List all enabled assets
+            mediaTypes.forEach { (key: PHAssetMediaType, value: Bool) in
+                if (value) {
+                    processAssets(mediaType: key)
+                }
             }
         }
         if (assetSets.count < 1) {
@@ -122,16 +119,16 @@ class PhotosSnapshot {
         if let value = ProcessInfo.processInfo.environment["MEDIA_TYPES"] {
             // User-specified media types
             print("Media types: \(value)")
-            if (value.uppercased().firstIndex(of: "V") != nil) {
-                saveVideos = true
+            mediaTypes = [.audio: false, .image: false, .video: false]
+            if (value.uppercased().firstIndex(of: "A") != nil)  {
+                mediaTypes[.audio] = true
             }
             if (value.uppercased().firstIndex(of: "P") != nil)  {
-                savePhotos = true
+                mediaTypes[.image] = true
             }
-        } else {
-            // Default behavior
-            savePhotos = true
-            saveVideos = true
+            if (value.uppercased().firstIndex(of: "V") != nil) {
+                mediaTypes[.video] = true
+            }
         }
     }
     
