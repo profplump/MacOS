@@ -45,9 +45,14 @@ class PhotosList {
         return nil
     }
     
-    func media(mediaType: PHAssetMediaType) -> PHFetchResult<PHAsset> {
+    func media(mediaType: PHAssetMediaType, oldestDate: Date? = nil) -> PHFetchResult<PHAsset> {
         let mediaOptions = fetchOptions
+        if (oldestDate != nil) {
+            let predicateDate = oldestDate! as CVarArg
+            mediaOptions.predicate = NSPredicate(format: "creationDate >= %@ OR modificationDate >= %@", predicateDate, predicateDate)
+        }
         mediaOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+        print("Media options: \(mediaOptions)")
         return PHAsset.fetchAssets(with: mediaType, options: mediaOptions)
     }
     
