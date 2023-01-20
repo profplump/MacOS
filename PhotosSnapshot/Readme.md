@@ -8,7 +8,7 @@ PhotosSnapshot creates a filesystem-based backup for Photos assets including pho
 
 I wrote this tool to allow me to backup my iCloud-stored photos without using all the local storage required for "Download Originals to this Mac".
 
-I hope to extend this tool to support lightweight incremental snapshots, using APFS COW clones or hardlinks to provide a time series of complete snapshots without unncessary duplicating the underlying data, much like Time Machine.
+I hope to extend this tool to support lightweight incremental snapshots, using APFS COW clones and/or hardlinks to provide a time-series of complete snapshots without unncessarily duplicating the underlying data, much like Time Machine.
 
 This project is not based on but was inspired by [PhotosExporter](https://github.com/abentele/PhotosExporter) by Andreas Bentele. Their tool makes similar lightweight clones - probably better ones - but can only work the local assets. That workflow doesn't suit my needs but their project did convince me I could write a Swift PhotoKit app, which was very helpful.
 
