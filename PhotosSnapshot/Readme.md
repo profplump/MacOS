@@ -10,7 +10,7 @@ I wrote this tool to allow me to backup my iCloud-stored photos without using al
 
 I hope to extend this tool to support lightweight incremental snapshots, using APFS COW clones and/or hardlinks to provide a time-series of complete snapshots without unncessarily duplicating the underlying data, much like Time Machine.
 
-This project is not based on but was inspired by [PhotosExporter](https://github.com/abentele/PhotosExporter) by Andreas Bentele. Their tool makes similar lightweight clones - probably better ones - but can only work local assets. That workflow doesn't suit my needs but their project did convince me I could write a Swift PhotoKit app, which was very helpful.
+This project is not based on but was inspired by [PhotosExporter](https://github.com/abentele/PhotosExporter) by Andreas Bentele. Their tool makes similar lightweight clones - probably better ones - but can only backup local assets. That workflow doesn't suit my needs but their project did convince me I could write a Swift PhotoKit app, which was very helpful.
 
 ## Usage
 
@@ -30,9 +30,7 @@ PhotosSnapshot will download all assets of all enabled types into a snapshot at 
 
 The value of `DATE_STRING` should match the subfolder used in an existing snapshot
 
-This will reprocess the existing snapshot by adding new assets and retrying any missing resources. It will not modify or remove any existing files.
-
-Use `WARN_EXISTS` to log existing resource files (which are never modified)
+This will reprocess the existing snapshot by adding new assets and retrying any missing resources. It will not modify (nor verify) any existing files.
 
 --
 
