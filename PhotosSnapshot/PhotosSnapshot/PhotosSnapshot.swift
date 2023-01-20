@@ -27,15 +27,20 @@ class PhotosSnapshot {
         assetSets = []
     }
 
-    // Prompt for Photo Library access and wait until we have it
     func main() async throws {
+        // Basic runtime sanity checks
+        if (CommandLine.arguments.count < 1) {
+            usage() // Does not return
+        }
+
+        // Prompt for Photo Library access and wait until we have it
         access.auth(wait: true)
         if (!access.valid()) {
             exit(-3)
         }
         
         // Figure out where we are writing
-        validateParentURL()
+        validateParentURL(path: CommandLine.arguments[1])
         buildDestURL()
         var isDir: ObjCBool = true
         if (!FileManager.default.fileExists(atPath: parentFolder.path, isDirectory: &isDir)) {
@@ -47,7 +52,7 @@ class PhotosSnapshot {
         selectMediaTypes()
         if (CommandLine.arguments.count > 2) {
             // Find assets with provided assetLocalIDs (i.e. ZUUIDs)
-            processUUIDs(args: CommandLine.arguments)
+            processUUIDs(uuids: Array(CommandLine.arguments.suffix(from: 2)))
         } else {
             // List all enabled assets
             mediaTypes.forEach { (key: PHAssetMediaType, value: Bool) in
@@ -102,12 +107,8 @@ class PhotosSnapshot {
         destFolder = URL(fileURLWithPath: parentFolder.path + "/" + date + "/")
     }
     
-    func validateParentURL() {
-        if (CommandLine.arguments.count > 1) {
-            parentFolder = URL(fileURLWithPath: CommandLine.arguments[1])
-        } else {
-            usage() // Does not return
-        }
+    func validateParentURL(path: String) {
+        parentFolder = URL(fileURLWithPath: path)
         var isDir: ObjCBool = true
         if (!FileManager.default.fileExists(atPath: parentFolder.path, isDirectory: &isDir)) {
             print("Invalid output folder: \(parentFolder)")
@@ -133,24 +134,21 @@ class PhotosSnapshot {
     }
     
     func processAssets(mediaType: PHAssetMediaType) {
+        print("Listing type \(mediaType.rawValue) assets")
         let assets = list.media(mediaType: mediaType)
         safeAppendAssetSets(assets: assets)
         print("Found \(assets.count) type \(mediaType.rawValue) assets")
     }
     
-    func processUUIDs(args: [String]) {
-        var uuids: [String] = []
-        for i in 2...args.count-1 {
-            uuids.append(args[i])
-        }
-        print("Processing \(uuids.count) UUIDs")
+    func processUUIDs(uuids: [String]) {
+        print("Listing assets by UUID")
         let assets = list.assetByLocalID(uuids: uuids)
         safeAppendAssetSets(assets: assets)
         print("Found \(assets.count) UUID assets")
     }
     
     fileprivate func usage() {
-        print("Usage: \(CommandLine.arguments.first ?? "<cmd>")) output_folder [UUID1] [UUID2]")
+        print("Usage: PhotosSnapshot output_folder [UUID1] [UUID2]")
         exit(-1)
     }
 }
