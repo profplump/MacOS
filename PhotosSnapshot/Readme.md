@@ -1,8 +1,8 @@
 # PhotosSnapshot
 
-PhotosSnapshot is a command-line tool for creating partial and full backups of Apple Photos assets. It can process both locally-stored files and iCloud data and is built on the PhotoKit SDK.
+PhotosSnapshot is a command-line tool for creating backups of Apple Photos assets. It can process both locally-stored files and iCloud data and is built on the PhotoKit SDK.
 
-PhotosSnapshot creates a filesystem-based backup for Photos assets including photos, videos, and live photos. The original, modified, and alternate (i.e. RAW) versions of all assets, if available, are  copied to the destination folder. Assets are represented as folders and named according to the identifier used by PhotoKit[^1]. Resources are grouped by asset folder and named by type, with file extension that matches their data type.
+PhotosSnapshot creates a filesystem-based backup for Photos assets including audio, photos, videos, and live photos. The original, modified, and alternate (i.e. RAW) versions of all assets, if available, are copied to the destination folder. Assets are represented as folders and named according to the identifier used by PhotoKit[^1]. Resources are grouped into asset folders and named by type.
 
 [^1]: Which matches the asset UUID from the Photos Library SQLite DB
 
@@ -10,7 +10,7 @@ I wrote this tool to allow me to backup my iCloud-stored photos without using al
 
 I hope to extend this tool to support lightweight incremental snapshots, using APFS COW clones and/or hardlinks to provide a time-series of complete snapshots without unncessarily duplicating the underlying data, much like Time Machine.
 
-This project is not based on but was inspired by [PhotosExporter](https://github.com/abentele/PhotosExporter) by Andreas Bentele. Their tool makes similar lightweight clones - probably better ones - but can only work the local assets. That workflow doesn't suit my needs but their project did convince me I could write a Swift PhotoKit app, which was very helpful.
+This project is not based on but was inspired by [PhotosExporter](https://github.com/abentele/PhotosExporter) by Andreas Bentele. Their tool makes similar lightweight clones - probably better ones - but can only work local assets. That workflow doesn't suit my needs but their project did convince me I could write a Swift PhotoKit app, which was very helpful.
 
 ## Usage
 
@@ -34,7 +34,6 @@ This will reprocess the existing snapshot by adding new assets and retrying any 
 
 Use `WARN_EXISTS` to log existing resource files (which are never modified)
 
-
 --
 
 ### Fetch Specific Assets
@@ -45,8 +44,6 @@ Where the value of the second and any subsequent arguements are UUIDs as expecte
 
 
 ## Environmental Variables
-
-PhotosSnapshot supports several environmental variables to control operation at runtime
 
 MEDIA_TYPES
 : Restrict fetch requests to assets with the specified media type. Use A for audio, P for images, and V for videos. Does not apply to UUID-based searches `MEDIA_TYPES="APV"`
