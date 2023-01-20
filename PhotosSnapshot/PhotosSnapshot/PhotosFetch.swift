@@ -25,38 +25,43 @@ class PhotosFetch {
         }
     }
     
-    func fetchAssets(media: PHFetchResult<PHAsset>, parentFolder: URL) async {
-        var assetCount: Int = 0
-        var resourceCount: Int = 0
-        var errorCount: Int = 0
+    func fetchAssets(media: PHFetchResult<PHAsset>, destFolder: URL) async -> FetchStats {
+        let fetchStats = FetchStats()
 
         // Fetch valid (usable) resources of every asset
         for i in 0...media.count-1 {
             let asset = media.object(at: i)
-            let startResourceCount = resourceCount
+            let startResourceCount = fetchStats.resourceCount
 
             let resources = PHAssetResource.assetResources(for: asset)
             for resource in findValidResources(resources: resources) {
                 do {
-                    try await readFile(resource: resource, parentFolder: parentFolder)
-                    resourceCount += 1
+                    try await readFile(resource: resource, parentFolder: destFolder)
+                    fetchStats.resourceCount += 1
                 } catch {
                     print("Resource fetch error: \(Utils.resourcePath(resource: resource))")
-                    errorCount += 1
+                    fetchStats.resourceErrors += 1
                 }
             }
             
             // Notice if we did not fetch any resources for this asset
-            if (startResourceCount == resourceCount) {
+            if (startResourceCount == fetchStats.resourceCount) {
                 print("Fetched 0 resources for asset: \(Utils.uuid(id: asset.localIdentifier))")
                 continue
             }
-            assetCount += 1
+            fetchStats.assetCount += 1
         }
         
-        // Error statistics so we can tell how things went
-        print("Assets: \(assetCount)/\(media.count - assetCount) success/error")
-        print("Resources: \(resourceCount)/\(errorCount) success/error")
+        // Return error statistics so we can tell how things went
+        fetchStats.assetErrors = media.count - fetchStats.assetCount
+        return fetchStats
+    }
+    
+    class FetchStats {
+        var assetCount: Int = 0,
+        assetErrors: Int = 0,
+        resourceCount: Int = 0,
+        resourceErrors: Int = 0
     }
     
     func readFile(resource: PHAssetResource, parentFolder: URL) async throws {
