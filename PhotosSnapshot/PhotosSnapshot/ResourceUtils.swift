@@ -9,7 +9,7 @@
 import Foundation
 import Photos
 
-class Utils {
+class ResourceUtils {
     static func uuid(id: String?) -> String {
         // Return a string even if we are fed nothing
         if (id == nil) {
@@ -29,7 +29,7 @@ class Utils {
     
     static func resourcePath(resource: PHAssetResource) -> String {
         /** Grab a stable UUID for this asset bundle **/
-        let UUID = Utils.uuid(id: resource.assetLocalIdentifier)
+        let UUID = ResourceUtils.uuid(id: resource.assetLocalIdentifier)
         
         /** Grab the extension from the original import file **/
         let ext = URL(fileURLWithPath: resource.originalFilename).pathExtension.lowercased()

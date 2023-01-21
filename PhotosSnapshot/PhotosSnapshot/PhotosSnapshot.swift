@@ -27,7 +27,7 @@ class PhotosSnapshot {
         assetSets = []
     }
 
-    func main() async throws {
+    func main() throws {
         // Basic runtime sanity checks
         if (CommandLine.arguments.count < 1) {
             usage() // Does not return
@@ -70,10 +70,15 @@ class PhotosSnapshot {
         let fetch = PhotosFetch()
         for assets in assetSets {
             print("Fetching \(assets.count) assets")
-            // I should probably queue these for faster dispatch, but for now, await
-            let fetchStats = await fetch.fetchAssets(media: assets, destFolder: destFolder)
-            print("Assets: \(fetchStats.assetCount)/\(fetchStats.assetErrors) success/error")
-            print("Resources: \(fetchStats.resourceCount)/\(fetchStats.resourceErrors) success/error")
+            let fetchStats = fetch.fetchAssets(media: assets, destFolder: destFolder)
+            print("Resources: \(fetchStats.resourceSuccess.count)/\(fetchStats.resourceError.count) success/fail")
+            print("Fetched \(fetchStats.assetSuccess.count) of \(assets.count) assets with \(fetchStats.assetError.count) errors")
+            if (fetchStats.assetError.count > 0) {
+                print("Incomplete assets:")
+                for error in fetchStats.assetError.sorted() {
+                    print("\t\(error)")
+                }
+            }
         }
     }
     

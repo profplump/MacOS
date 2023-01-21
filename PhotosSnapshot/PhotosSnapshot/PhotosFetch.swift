@@ -1,8 +1,8 @@
 //
-//  PhotosFetch.swift
+//  FetchAssets.swift
 //  PhotosSnapshot
 //
-//  Created by Zach Isbach on 2023-01-18.
+//  Created by Zach Isbach on 2023-01-21.
 //  Copyright © 2023 Zi3. All rights reserved.
 //
 
@@ -10,12 +10,17 @@ import Foundation
 import Photos
 
 class PhotosFetch {
-    private let fetchOptions: PHAssetResourceRequestOptions
-    private let resourceManager: PHAssetResourceManager
-        
+    let fetchStats: FetchStats
+    let resourceManager: PHAssetResourceManager
+    let fetchOptions: PHAssetResourceRequestOptions
+    let dispatchGroup: DispatchGroup
+    let warnExists: Bool
+    
     init() {
+        fetchStats = FetchStats()
         resourceManager = PHAssetResourceManager()
-
+        dispatchGroup = DispatchGroup()
+        
         fetchOptions = PHAssetResourceRequestOptions()
         if (ProcessInfo.processInfo.environment.index(forKey: "NO_NETWORK") != nil) {
             print("Excluding network assets")
@@ -23,66 +28,50 @@ class PhotosFetch {
         } else {
             fetchOptions.isNetworkAccessAllowed = true
         }
+        warnExists = (ProcessInfo.processInfo.environment.index(forKey: "WARN_EXISTS") != nil)
     }
     
-    func fetchAssets(media: PHFetchResult<PHAsset>, destFolder: URL) async -> FetchStats {
-        let fetchStats = FetchStats()
-
-        // Fetch valid (usable) resources of every asset
+    func fetchAssets(media: PHFetchResult<PHAsset>, destFolder: URL) -> FetchStats {
         for i in 0...media.count-1 {
-            let asset = media.object(at: i)
-            let startResourceCount = fetchStats.resourceCount
-
-            let resources = PHAssetResource.assetResources(for: asset)
-            for resource in findValidResources(resources: resources) {
-                do {
-                    //DispatchQueue.global().async {
-                    //    print(Utils.resourcePath(resource: resource))
-                    //}
-                    try await readFile(resource: resource, parentFolder: destFolder)
-                    fetchStats.resourceCount += 1
-                } catch {
-                    print("Resource fetch error: \(Utils.resourcePath(resource: resource))")
-                    fetchStats.resourceErrors += 1
+            let resources = PHAssetResource.assetResources(for: media.object(at: i))
+            for resource in findSupportedResources(resources: resources) {
+                dispatchGroup.enter()
+                DispatchQueue.global(qos: .utility).async {
+                    self.readFile(resource: resource, parentFolder: destFolder)
                 }
             }
-            
-            // Notice if we did not fetch any resources for this asset
-            if (startResourceCount == fetchStats.resourceCount) {
-                print("Fetched 0 resources for asset: \(Utils.uuid(id: asset.localIdentifier))")
-                continue
-            }
-            fetchStats.assetCount += 1
         }
-        
-        // Return error statistics so we can tell how things went
-        fetchStats.assetErrors = media.count - fetchStats.assetCount
+        // Wait for all the readFile() calls
+        dispatchGroup.wait()
         return fetchStats
     }
     
-    class FetchStats {
-        var assetCount: Int = 0,
-        assetErrors: Int = 0,
-        resourceCount: Int = 0,
-        resourceErrors: Int = 0
-    }
-    
-    func readFile(resource: PHAssetResource, parentFolder: URL) async throws {
-        let filename = Utils.resourcePath(resource: resource)
+    func readFile(resource: PHAssetResource, parentFolder: URL) {
+        let filename = ResourceUtils.resourcePath(resource: resource)
         let dest = URL(fileURLWithPath: filename, relativeTo: parentFolder)
-        try FileManager.default.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
-
-        /** Do not overwrite **/
-        if (FileManager.default.fileExists(atPath: dest.path)) {
-            if (ProcessInfo.processInfo.environment.index(forKey: "WARN_EXISTS") != nil) {
-                print("File exists: \(dest)")
-            }
+        do {
+            try FileManager.default.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
+        } catch {
+            print("Unable to create asset folder: \(dest.deletingLastPathComponent())")
+            fetchStats.record(resource: resource, success: false)
+            dispatchGroup.leave()
             return
         }
-        try await resourceManager.writeData(for: resource, toFile: dest, options: fetchOptions)
+        
+        /** Do not overwrite **/
+        if (FileManager.default.fileExists(atPath: dest.path)) {
+            fetchStats.record(resource: resource, success: !warnExists)
+            dispatchGroup.leave()
+            return
+        }
+        
+        resourceManager.writeData(for: resource, toFile: dest, options: fetchOptions) { (error) in
+            self.fetchStats.record(resource: resource, success: (error == nil))
+            self.dispatchGroup.leave()
+        }
     }
     
-    func findValidResources(resources: [PHAssetResource]) -> [PHAssetResource] {
+    func findSupportedResources(resources: [PHAssetResource]) -> [PHAssetResource] {
         var valid: [PHAssetResource] = []
         
         // Images
@@ -93,39 +82,39 @@ class PhotosFetch {
         
         // Live Photos
         valid.append(contentsOf: validateResources(resources: resources, originalType: PHAssetResourceType.pairedVideo, modifiedType: PHAssetResourceType.fullSizePairedVideo))
-       
+        
         // Videos
         valid.append(contentsOf: validateResources(resources: resources, originalType: PHAssetResourceType.video, modifiedType: PHAssetResourceType.fullSizeVideo))
-
+        
         // Audio
         valid.append(contentsOf: validateResources(resources: resources, originalType: PHAssetResourceType.audio))
-                 
+        
         return valid
     }
     
     func validateResources(resources: [PHAssetResource], originalType: PHAssetResourceType, modifiedType: PHAssetResourceType? = nil) -> [PHAssetResource] {
-        let id = Utils.uuid(id: resources.first?.assetLocalIdentifier)
-
+        let id = ResourceUtils.uuid(id: resources.first?.assetLocalIdentifier)
+        
         var valid: [PHAssetResource] = []
         let original = resources.filter { $0.type == originalType }
         var modified: [PHAssetResource] = []
         if (modifiedType != nil) {
             modified = resources.filter { $0.type == modifiedType }
         }
-
+        
         if (original.count > 0 ||  modified.count > 0) {
             if (original.count == 1) {
                 valid.append(original.first!)
             } else {
                 // Videos are allowed a modifed still with no original still
                 if (resources.first?.type != .video && modified.count > 0 && modified.first?.type == PHAssetResourceType.fullSizePhoto) {
-                    print("No original resource: \(Utils.uuid(id: id))")
+                    print("No original resource: \(ResourceUtils.uuid(id: id))")
                 }
             }
             if (modified.count > 0) {
                 valid.append(modified.first!)
                 if (modified.count > 1) {
-                    print("Invalid modified resources: \(Utils.uuid(id: id))")
+                    print("Invalid modified resources: \(ResourceUtils.uuid(id: id))")
                 }
             }
         }

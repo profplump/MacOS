@@ -7,4 +7,4 @@
 
 import Foundation
 
-try await PhotosSnapshot().main()
+try PhotosSnapshot().main()
