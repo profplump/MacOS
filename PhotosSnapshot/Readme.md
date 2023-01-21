@@ -65,4 +65,4 @@ NO_HIDDEN
 : Do not include Hidden assets in fetch requests `NO_HIDDEN=1`
 
 NO_NETWORK
-: Disable access to remote (iCloud) resources. Resources with local resource files will still be copied. If you only wish to backup locally-available assets this options is likely much faster `NO_NETWORK=1`
+: Disable access to remote (iCloud) resources. Resources with local resource files will still be copied. If you only wish to backup locally-available assets this can be much faster `NO_NETWORK=1`
