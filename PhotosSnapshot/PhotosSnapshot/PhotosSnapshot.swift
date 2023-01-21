@@ -136,6 +136,15 @@ class PhotosSnapshot {
     func processAssets(mediaType: PHAssetMediaType) {
         print("Listing type \(mediaType.rawValue) assets")
         let assets = list.media(mediaType: mediaType)
+        /**
+        let assets = list.media(mediaType: mediaType, oldestDate: Date(timeIntervalSinceNow: -86400))
+        for i in 0...assets.count-1 {
+            let asset = assets.object(at: i)
+            print("Asset: \(Utils.uuid(id: asset.localIdentifier))")
+            print("\tCreated: \(String(describing: asset.creationDate))")
+            print("\tModified: \(String(describing: asset.modificationDate))")
+        }
+         **/
         safeAppendAssetSets(assets: assets)
         print("Found \(assets.count) type \(mediaType.rawValue) assets")
     }

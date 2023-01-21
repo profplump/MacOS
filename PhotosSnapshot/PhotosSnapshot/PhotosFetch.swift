@@ -114,12 +114,13 @@ class PhotosFetch {
             if (original.count == 1) {
                 valid.append(original.first!)
             } else {
-                print("No original resource: \(id)")
+                // This needs an exception for .video assets -- they can have a derived still with no original still
+                print("No original resource: \(Utils.uuid(id: id))")
             }
             if (modified.count > 0) {
                 valid.append(modified.first!)
                 if (modified.count > 1) {
-                    print("Invalid modified resources: \(id)")
+                    print("Invalid modified resources: \(Utils.uuid(id: id))")
                 }
             }
         }
