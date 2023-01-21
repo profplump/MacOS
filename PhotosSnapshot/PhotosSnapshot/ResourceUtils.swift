@@ -27,7 +27,7 @@ class ResourceUtils {
         return String(safeId[..<slash!])
     }
     
-    static func resourcePath(resource: PHAssetResource) -> String {
+    static func path(resource: PHAssetResource) -> String {
         /** Grab a stable UUID for this asset bundle **/
         let UUID = ResourceUtils.uuid(id: resource.assetLocalIdentifier)
         

@@ -47,7 +47,7 @@ class PhotosFetch {
     }
     
     func readFile(resource: PHAssetResource, parentFolder: URL) {
-        let filename = ResourceUtils.resourcePath(resource: resource)
+        let filename = ResourceUtils.path(resource: resource)
         let dest = URL(fileURLWithPath: filename, relativeTo: parentFolder)
         do {
             try FileManager.default.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)

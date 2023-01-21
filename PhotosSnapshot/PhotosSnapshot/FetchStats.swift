@@ -22,7 +22,7 @@ class FetchStats {
     
     func record(resource: PHAssetResource, success: Bool) {
         let uuid = ResourceUtils.uuid(id: resource.assetLocalIdentifier)
-        let path = ResourceUtils.resourcePath(resource: resource)
+        let path = ResourceUtils.path(resource: resource)
 
         fetchStatsSemaphore.wait()
         if (success) {
