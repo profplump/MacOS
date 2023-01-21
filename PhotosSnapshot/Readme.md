@@ -50,19 +50,19 @@ FETCH_LIMIT
 : Limit fetch requests to the specified number of assets `FETCH_LIMIT=10`
 
 WARN_EXISTS
-: If set, issue a warning when a resource file already exists. `WARN_EXISTS=1`
+: Issue a warning when a resource file already exists. `WARN_EXISTS=1`
 
 NO_SUBFOLDER
-: If set, store assets in `destFolder` directly, without a Date subfolder `NO_SUBFOLDER=1`
+: Store assets in `destFolder` directly, without a Date subfolder `NO_SUBFOLDER=1`
 
 DATE_FORMAT
-: If set, override the default date format of "yyyy-MM-dd_hh-mm-ss" with the provided format string `DATE_FORMAT="yyyy-MM-dd"`
+: Override the default date format of "yyyy-MM-dd_hh-mm-ss" with the provided format string `DATE_FORMAT="yyyy-MM-dd"`
 
 DATE_STRING
-: If set, override the subfolder Date string with the provided string `DATE_STRING="2023-01-18_18-01-23"`
+: Override the subfolder Date string with the provided string `DATE_STRING="2023-01-18_18-01-23"`
 
 NO_HIDDEN
-: If set, do not include Hidden assets in fetch requests `NO_HIDDEN=1`
+: Do not include Hidden assets in fetch requests `NO_HIDDEN=1`
 
 NO_NETWORK
-: If set, disable access to remote (iCloud) resources. Resources with local resource files will still be copied. If you only wish to backup locally-avaiable assets this options is likely much faster (if a biy noisy in the current implementation). `NO_NETWORK=1`
+: Disable access to remote (iCloud) resources. Resources with local resource files will still be copied. If you only wish to backup locally-available assets this options is likely much faster `NO_NETWORK=1`
