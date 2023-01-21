@@ -36,6 +36,9 @@ class PhotosFetch {
             let resources = PHAssetResource.assetResources(for: asset)
             for resource in findValidResources(resources: resources) {
                 do {
+                    //DispatchQueue.global().async {
+                    //    print(Utils.resourcePath(resource: resource))
+                    //}
                     try await readFile(resource: resource, parentFolder: destFolder)
                     fetchStats.resourceCount += 1
                 } catch {
@@ -101,7 +104,7 @@ class PhotosFetch {
     }
     
     func validateResources(resources: [PHAssetResource], originalType: PHAssetResourceType, modifiedType: PHAssetResourceType? = nil) -> [PHAssetResource] {
-        let id = resources.first?.assetLocalIdentifier ?? "<missing ID>"
+        let id = Utils.uuid(id: resources.first?.assetLocalIdentifier)
 
         var valid: [PHAssetResource] = []
         let original = resources.filter { $0.type == originalType }
@@ -114,8 +117,10 @@ class PhotosFetch {
             if (original.count == 1) {
                 valid.append(original.first!)
             } else {
-                // This needs an exception for .video assets -- they can have a derived still with no original still
-                print("No original resource: \(Utils.uuid(id: id))")
+                // Videos are allowed a modifed still with no original still
+                if (resources.first?.type != .video && modified.count > 0 && modified.first?.type == PHAssetResourceType.fullSizePhoto) {
+                    print("No original resource: \(Utils.uuid(id: id))")
+                }
             }
             if (modified.count > 0) {
                 valid.append(modified.first!)

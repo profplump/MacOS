@@ -10,9 +10,21 @@ import Foundation
 import Photos
 
 class Utils {
-    static func uuid(id: String) -> String {
-        /** This UUID matches the one in the Photos Library SQLite DB **/
-        return String(id[..<id.firstIndex(of: "/")!])
+    static func uuid(id: String?) -> String {
+        // Return a string even if we are fed nothing
+        if (id == nil) {
+            return "Invalid_UUID"
+        }
+        let safeId = id!
+        
+        // Do something sane even if we don't get a valid assetLocalID
+        let slash = safeId.firstIndex(of: "/")
+        if (slash == nil) {
+            return safeId
+        }
+
+        // This UUID matches the one in the Photos Library SQLite DB
+        return String(safeId[..<slash!])
     }
     
     static func resourcePath(resource: PHAssetResource) -> String {
