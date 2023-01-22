@@ -14,7 +14,7 @@ let default_dateFormat = "yyyy-MM-dd_hh-mm-ss"
 
 @main
 struct CmdLineArgs: ParsableCommand {
-    @Argument(help: "Destination parent folder. Snapshots are created in folders at <parent>/<date_time>")
+    @Argument(help: "Destination parent folder. Snapshots are created in folders under this path")
     var parent: String
     
     @Option(name: .shortAndLong, help: "An existing snapshot path, relative to <parent>. Required for append or incremental operations")

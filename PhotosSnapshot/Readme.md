@@ -40,19 +40,23 @@ This will reprocess the existing snapshot by adding new assets and retrying any 
 
 ### Fetch Specific Assets
 
-`PhotosSnapshot <parent> <UUID_1> <UUID_2>... <UUID_N>`
+`PhotosSnapshot <parent> --uuid <UUID_1> <UUID_2>... <UUID_N>`
 
-`PhotosSnapshot /Volumes/BackupDisk/Snapshots 5DF52E20-7411-4748-98C9-211422F97563 431C6A1C-1BC3-4450-B6C8-76CEA3972542`
+`PhotosSnapshot /Volumes/BackupDisk/Snapshots --uuid 5DF52E20-7411-4748-98C9-211422F97563 431C6A1C-1BC3-4450-B6C8-76CEA3972542`
 
 Where the value of the second and any subsequent arguements are UUIDs as expected by PhotoKit. When used in this mode MEDIA_TYPES are ignored and assets of any supported type will be fetched.
 
 ## Arguments, Options, and Flags
 
 parent
-: Destination parent folder. Snapshots are created in folders at `<parent>/<date>`
+: Destination parent folder. Snapshots are created in folders under this path
+
+`/Volumes/BackupDisk/Snapshots`
 
 --base
 : An existing snapshot, relative to `<parent>`. Required for append or incremental operations
+
+`-b 2023-01-11_12-13-14`
 
 --append
 : Append the existing snapshot at `<base>`
@@ -63,26 +67,34 @@ parent
 --uuid
 : One or more UUIDs to fetch. This option does not support the media-types filter or incremental operation
 
+`-u 5DF52E20-7411-4748-98C9-211422F97563 431C6A1C-1BC3-4450-B6C8-76CEA3972542`
+
 --media-types
-: Restrict fetch requests to assets with the specified media type. Use A for audio, P for images, and V for videos. Does not apply to UUID-based searches `-m APV`
+: Restrict fetch requests to assets with the specified media type. Use A for audio, P for images, and V for videos. Does not apply to UUID-based searches
+
+`-m APV`
 
 --fetch-limit
-: Limit fetch requests to the specified number of assets `-f 10`
+: Limit fetch requests to the specified number of assets
+
+`-f 10`
 
 --date-format
-: A DateFormatter format string for use in naming snapshot folders. Default: yyyy-MM-dd_hh-mm-ss `-d "yyyy-MM-dd"`
+: A DateFormatter format string for use in naming snapshot folders. Default: yyyy-MM-dd_hh-mm-ss
+
+`-d yyyy-MM-dd`
 
 --warn-exists
-: Issue a warning when a resource file already exists. By default existing files are ignored and counted as successful fetches `-w`
+: Issue a warning when a resource file already exists. By default existing files are ignored and counted as successful fetches
 
 --local-only
-: Disable network (iCloud) fetch requests -- only process local assets `-l`
+: Disable network (iCloud) fetch requests -- only process local assets
 
 --no-hidden
-: Do not include Hidden assets in fetch results `-n`
+: Do not include Hidden assets in fetch results
 
 --verbose
-: Enable additional runtime output `-v`
+: Enable additional runtime output
 
 
 ## Environmental Variables
