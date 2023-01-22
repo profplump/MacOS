@@ -62,7 +62,7 @@ parent
 : Append the existing snapshot at `<base>`
 
 --incremental
-: Create a new incremental backup using <base> as a prior snapshot. Fetches only resources that have changed since the timestamp of `<base>` or the provided `--compare-date`
+: Create a new incremental backup using `<base>` as a prior snapshot. Fetches only resources that have changed since the timestamp of `<base>` or the provided `--compare-date`
 
 --clone
 : Use APFS clones to resources in `<base>` to create a complete snapshot without re-fetching unchanged resources. Implies `--incremental`
