@@ -73,6 +73,7 @@ struct CmdLineArgs: ParsableCommand {
         mediaTypes = mediaTypes.uppercased()
         var isDir: ObjCBool = true
         if (!FileManager.default.fileExists(atPath: parent, isDirectory: &isDir)) {
+            // TODO: stderr
             print("Invalid parent folder: \(parent)")
             return
         }

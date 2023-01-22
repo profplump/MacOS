@@ -53,6 +53,7 @@ class PhotosFetch {
         do {
             try FileManager.default.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
         } catch {
+            // TODO: stderr
             print("Unable to create asset folder: \(dest.deletingLastPathComponent())")
             fetchStats.record(resource: resource, success: false)
             dispatchGroup.leave()
