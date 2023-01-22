@@ -27,7 +27,7 @@ class PhotosSnapshot {
         oldestDate = nil
     }
 
-    func main() throws {
+    func main() {
         // Prompt for Photo Library access and wait until we have it
         access.auth(wait: true)
         if (!access.valid()) {

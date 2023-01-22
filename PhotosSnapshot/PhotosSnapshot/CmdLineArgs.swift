@@ -132,6 +132,6 @@ struct CmdLineArgs: ParsableCommand {
         }
                
         // Run it
-        try PhotosSnapshot(cmdLineArgs: self).main();
+        PhotosSnapshot(cmdLineArgs: self).main();
     }
 }
