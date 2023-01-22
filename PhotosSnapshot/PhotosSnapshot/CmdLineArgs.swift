@@ -23,9 +23,15 @@ struct CmdLineArgs: ParsableCommand {
     @Flag(name: .shortAndLong, help: "Append the existing snapshot at <base>")
     var append: Bool = false
     
-    @Flag(name: .shortAndLong, help: "Create a new incremental backup using <base> as a prior snapshot")
+    @Flag(name: .shortAndLong, help: "Create a new incremental backup using <base> as a prior snapshot. Fetches only resources that have changed since the timestamp of `<base>` or the provided `--incremental-date`")
     var incremental: Bool = false
-    
+    @Flag(name: .shortAndLong, help: "Use APFS clones to resources in `<base>` to create a complete snapshot without re-fetching unchanged resources. Implies --incremental")
+    var clone: Bool = false
+    @Flag(name: .shortAndLong, help: "Use hardlinks to resources in `<base>` to create a complete snapshot without re-fetching unchanged resources. Implies --incremental")
+    var hardlink: Bool = false
+    @Flag(name: .shortAndLong, help: "Use symlinks to resources in `<base>` to create a complete snapshot without re-fetching unchanged resources. Implies --incremental")
+    var symlink: Bool = false
+
     @Option(name: .shortAndLong, parsing: .remaining, help: "One or more UUIDs to fetch. This option does not support the media-types filter or incremental operation")
     var uuid: [String] = []
     
@@ -37,8 +43,11 @@ struct CmdLineArgs: ParsableCommand {
     
     @Option(name: .shortAndLong, help: "A DateFormatter format string for use in naming snapshot folders. Default: yyyy-MM-dd_hh-mm-ss")
     var dateFormat: String = default_dateFormat
+    
+    @Option(name: [.customShort("k"), .long], help: "A date string, in the format specified in date-format, for use in incremental backups. This overrides folder-based date determinations")
+    var compareDate: String? = nil
 
-    @Flag(name: .shortAndLong, help: "Warn if a resource file already exists at the output path. Otherwise this file is treated as a successful fetch. Default: false")
+    @Flag(name: .shortAndLong, help: "Issue a warning when a resource file already exists. By default existing files are ignored and counted as successful fetches")
     var warnExists: Bool = false
 
     @Flag(name: .shortAndLong, help: "Disable network (iCloud) fetch requests -- only process local assets")
@@ -68,6 +77,9 @@ struct CmdLineArgs: ParsableCommand {
         if let value = env["DATE_FORMAT"] {
              dateFormat = value
         }
+        if let value = env["COMPARE_DATE"] {
+            compareDate = value
+        }
         if let value = env["FETCH_LIMIT"] {
              fetchLimit = Int(value)
         }
@@ -85,6 +97,9 @@ struct CmdLineArgs: ParsableCommand {
         }
 
         // Try to ensure these options are sensible
+        if (clone || symlink || hardlink) {
+            incremental = true
+        }
         if (base != nil && (!append && !incremental)) {
             append = true
         }

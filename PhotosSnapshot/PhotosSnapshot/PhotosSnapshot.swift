@@ -126,8 +126,14 @@ class PhotosSnapshot {
         
         // Parse a modification date from the base folder date
         if (options.incremental) {
-            // TODO: Should we take a date from the command line?
-            oldestDate = dateFormatter.date(from: baseURL.lastPathComponent)
+            if (options.compareDate != nil) {
+                oldestDate = dateFormatter.date(from: options.compareDate!)
+                if (options.verbose) {
+                    print("Compare Date: \(options.compareDate!)")
+                }
+            } else {
+                oldestDate = dateFormatter.date(from: baseURL.lastPathComponent)
+            }
             if (oldestDate == nil) {
                 // TODO: stderr
                 print("Unable to parse subfolder datetime: \(baseURL.lastPathComponent)")
@@ -176,15 +182,15 @@ class PhotosSnapshot {
         if (options.verbose) {
             print("Listing type \(mediaType.rawValue) assets")
         }
-        let assets = list.media(mediaType: mediaType, oldestDate: oldestDate)
-        if (false && options.verbose) {
-            for i in 0...assets.count-1 {
-                let asset = assets.object(at: i)
-                print("Asset: \(ResourceUtils.uuid(id: asset.localIdentifier))")
-                print("\tCreated: \(String(describing: asset.creationDate))")
-                print("\tModified: \(String(describing: asset.modificationDate))")
-            }
+        var listDate: Date?
+        if (options.incremental && !(options.clone || options.hardlink || options.symlink)) {
+            // Only restrict the list step when we are doing a non-linked incremental snapshot
+            listDate = oldestDate
+        } else {
+            // Otherwise fetch everything and filter the resources directly
+            listDate = nil
         }
+        let assets = list.media(mediaType: mediaType, oldestDate: listDate)
         appendAssets(assets: assets)
         if (options.verbose) {
             print("Found \(assets.count) type \(mediaType.rawValue) assets")

@@ -62,7 +62,16 @@ parent
 : Append the existing snapshot at `<base>`
 
 --incremental
-: Create a new incremental backup using `<base>` as a prior snapshot
+: Create a new incremental backup using <base> as a prior snapshot. Fetches only resources that have changed since the timestamp of `<base>` or the provided `--compare-date`
+
+--clone
+: Use APFS clones to resources in `<base>` to create a complete snapshot without re-fetching unchanged resources. Implies --incremental
+
+--hardlinks
+: Use hardlinks to resources in `<base>` to create a complete snapshot without re-fetching unchanged resources. Implies --incremental
+
+--symlinks
+: Use symlinks to resources in `<base>` to create a complete snapshot without re-fetching unchanged resources. Implies --incremental
 
 --uuid
 : One or more UUIDs to fetch. This option does not support the media-types filter or incremental operation
@@ -83,6 +92,11 @@ parent
 : A DateFormatter format string for use in naming snapshot folders. Default: yyyy-MM-dd_hh-mm-ss
 
 `-d yyyy-MM-dd`
+
+--compare-date
+: A date string, in the format specified in date-format, for use in incremental operations. This overrides folder-based date determinations
+
+`-k 2020-01-01_00-00-00`
 
 --warn-exists
 : Issue a warning when a resource file already exists. By default existing files are ignored and counted as successful fetches
@@ -107,6 +121,7 @@ Environmental variables will override command-line parameters of the same name
 - MEDIA_TYPES
 - FETCH_LIMIT
 - DATE_FORMAT
+- COMPARE_DATE
 - WARN_EXISTS
 - LOCAL_ONLY
 - NO_HIDDEN
