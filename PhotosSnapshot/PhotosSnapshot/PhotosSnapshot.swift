@@ -144,10 +144,11 @@ class PhotosSnapshot {
             }
 
             print("")
-            print("")
-            print("Incremental: Not yet implemented")
-            print("This does fetch modified/new assets, but does not create the rest of the snapshot")
-            print("Currently this only checks the asset create/modified timestamp, not individual resource timestamps")
+            print("Incremental: Work in progress. Currently this operation only checks the asset create/modified timestamp, not individual resource timestamps")
+            if (options.clone || options.hardlink || options.symlink) {
+                print("Thin snapshots using --clone, --hardlink, or --symlink are not yet implemented.")
+                print("Reverting to --incremental operation")
+            }
             print("")
         }
         
