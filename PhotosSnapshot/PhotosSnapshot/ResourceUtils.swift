@@ -56,6 +56,7 @@ class ResourceUtils {
         case .adjustmentData, .adjustmentBasePhoto, .adjustmentBaseVideo, .adjustmentBasePairedVideo:
             fallthrough
         @unknown default:
+            // TODO: stderr
             print("Unxpected resource type: \(resource.type.rawValue)")
             type = "Unknown - " + String(resource.type.rawValue)
         }

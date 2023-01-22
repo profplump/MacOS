@@ -18,17 +18,21 @@ PhotosSnapshot will prompt for full access to your Photos the first time it is r
 
 ### Create Snapshot
 
-`PhotosSnapshot destFolder`
+`PhotosSnapshot <parent>`
 
-PhotosSnapshot will download all assets of all enabled types into a snapshot at `destFolder/<currentDateTime>`
+`PhotosSnapshot /Volumes/BackupDisk/Snapshots`
+
+This will download all assets of all enabled types into a new snapshot at `<parent>/<datetime>`
 
 --
 
-### Update Snapshot
+### Append Snapshot
 
-`DATE_STRING="2023-01-18_18-01-23" PhotosSnapshot destFolder`
+`PhotosSnapshot -b <base> <parent>`
 
-The value of `DATE_STRING` should match the subfolder used in an existing snapshot
+`PhotosSnapshot -b 2023-01-11_12-13-14 /Volumes/BackupDisk/Snapshots`
+
+The value of value of `base` should match the subfolder of an existing snapshot in the same parent folder
 
 This will reprocess the existing snapshot by adding new assets and retrying any missing resources. It will not modify (nor verify) any existing files.
 
@@ -36,33 +40,58 @@ This will reprocess the existing snapshot by adding new assets and retrying any 
 
 ### Fetch Specific Assets
 
-`PhotosSnapshot destFolder UUID1 UUID2 UUID3`
+`PhotosSnapshot <parent> <UUID_1> <UUID_2>... <UUID_N>`
+
+`PhotosSnapshot /Volumes/BackupDisk/Snapshots 5DF52E20-7411-4748-98C9-211422F97563 431C6A1C-1BC3-4450-B6C8-76CEA3972542`
 
 Where the value of the second and any subsequent arguements are UUIDs as expected by PhotoKit. When used in this mode MEDIA_TYPES are ignored and assets of any supported type will be fetched.
+
+## Arguments, Options, and Flags
+
+parent
+: Destination parent folder. Snapshots are created in folders at `<parent>/<date>`
+
+--base
+: An existing snapshot, relative to `<parent>`. Required for append or incremental operations
+
+--append
+: Append the existing snapshot at `<base>`
+
+--incremental
+: Create a new incremental backup using `<base>` as a prior snapshot
+
+--uuid
+: One or more UUIDs to fetch. This option does not support the media-types filter or incremental operation
+
+--media-types
+: Restrict fetch requests to assets with the specified media type. Use A for audio, P for images, and V for videos. Does not apply to UUID-based searches `-m APV`
+
+--fetch-limit
+: Limit fetch requests to the specified number of assets `-f 10`
+
+--date-format
+: A DateFormatter format string for use in naming snapshot folders. Default: yyyy-MM-dd_hh-mm-ss `-d "yyyy-MM-dd"`
+
+--warn-exists
+: Issue a warning when a resource file already exists. By default existing files are ignored and counted as successful fetches `-w`
+
+--local-only
+: Disable network (iCloud) fetch requests -- only process local assets `-l`
+
+--no-hidden
+: Do not include Hidden assets in fetch results `-n`
+
+--verbose
+: Enable additional runtime output `-v`
 
 
 ## Environmental Variables
 
-MEDIA_TYPES
-: Restrict fetch requests to assets with the specified media type. Use A for audio, P for images, and V for videos. Does not apply to UUID-based searches `MEDIA_TYPES="APV"`
+Environmental variables will override command-line parameters of the same name
 
-FETCH_LIMIT
-: Limit fetch requests to the specified number of assets `FETCH_LIMIT=10`
-
-WARN_EXISTS
-: Issue a warning when a resource file already exists. `WARN_EXISTS=1`
-
-NO_SUBFOLDER
-: Store assets in `destFolder` directly, without a Date subfolder `NO_SUBFOLDER=1`
-
-DATE_FORMAT
-: Override the default date format of "yyyy-MM-dd_hh-mm-ss" with the provided format string `DATE_FORMAT="yyyy-MM-dd"`
-
-DATE_STRING
-: Override the subfolder Date string with the provided string `DATE_STRING="2023-01-18_18-01-23"`
-
-NO_HIDDEN
-: Do not include Hidden assets in fetch requests `NO_HIDDEN=1`
-
-NO_NETWORK
-: Disable access to remote (iCloud) resources. Resources with local resource files will still be copied. If you only wish to backup locally-available assets this can be much faster `NO_NETWORK=1`
+- MEDIA_TYPES
+- FETCH_LIMIT
+- WARN_EXISTS
+- DATE_FORMAT
+- NO_HIDDEN
+- LOCAL_ONLY

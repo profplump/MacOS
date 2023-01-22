@@ -11,7 +11,8 @@
 		1B6C6E832977F1BF00A0EF38 /* PhotosFetch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B6C6E822977F1BF00A0EF38 /* PhotosFetch.swift */; };
 		1B6C6E85297813FB00A0EF38 /* ResourceUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B6C6E84297813FB00A0EF38 /* ResourceUtils.swift */; };
 		1B6C98A8297A7A880058B76F /* PhotosSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B6C98A7297A7A880058B76F /* PhotosSnapshot.swift */; };
-		1B7ED2C42976D016006FC7FD /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7ED2C32976D016006FC7FD /* main.swift */; };
+		1B8EEE6B297CAFF1004B3F2E /* ArgumentParser in Frameworks */ = {isa = PBXBuildFile; productRef = 1B8EEE6A297CAFF1004B3F2E /* ArgumentParser */; };
+		1B8EEE6D297CB442004B3F2E /* CmdLineArgs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B8EEE6C297CB442004B3F2E /* CmdLineArgs.swift */; };
 		1B947269297C095E00E1B438 /* FetchStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B947268297C095E00E1B438 /* FetchStats.swift */; };
 		1BE1457C297781CD00E9DDE3 /* PhotosAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BE1457B297781CD00E9DDE3 /* PhotosAccess.swift */; };
 /* End PBXBuildFile section */
@@ -34,8 +35,8 @@
 		1B6C6E84297813FB00A0EF38 /* ResourceUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResourceUtils.swift; sourceTree = "<group>"; };
 		1B6C98A7297A7A880058B76F /* PhotosSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotosSnapshot.swift; sourceTree = "<group>"; };
 		1B7ED2C02976D016006FC7FD /* PhotosSnapshot */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = PhotosSnapshot; sourceTree = BUILT_PRODUCTS_DIR; };
-		1B7ED2C32976D016006FC7FD /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		1B7ED2CB2976DE68006FC7FD /* PhotosSnapshot.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = PhotosSnapshot.entitlements; sourceTree = "<group>"; };
+		1B8EEE6C297CB442004B3F2E /* CmdLineArgs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CmdLineArgs.swift; sourceTree = "<group>"; };
 		1B947268297C095E00E1B438 /* FetchStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FetchStats.swift; sourceTree = "<group>"; };
 		1BE1457B297781CD00E9DDE3 /* PhotosAccess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotosAccess.swift; sourceTree = "<group>"; };
 		1BEECB83297A964C0058D3CA /* Readme.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Readme.md; sourceTree = "<group>"; };
@@ -46,6 +47,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1B8EEE6B297CAFF1004B3F2E /* ArgumentParser in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -73,13 +75,13 @@
 			isa = PBXGroup;
 			children = (
 				1B7ED2CB2976DE68006FC7FD /* PhotosSnapshot.entitlements */,
-				1B7ED2C32976D016006FC7FD /* main.swift */,
 				1B6C98A7297A7A880058B76F /* PhotosSnapshot.swift */,
 				1BE1457B297781CD00E9DDE3 /* PhotosAccess.swift */,
 				1B271C652977C4BA00749F13 /* PhotosList.swift */,
 				1B6C6E822977F1BF00A0EF38 /* PhotosFetch.swift */,
 				1B947268297C095E00E1B438 /* FetchStats.swift */,
 				1B6C6E84297813FB00A0EF38 /* ResourceUtils.swift */,
+				1B8EEE6C297CB442004B3F2E /* CmdLineArgs.swift */,
 			);
 			path = PhotosSnapshot;
 			sourceTree = "<group>";
@@ -100,6 +102,9 @@
 			dependencies = (
 			);
 			name = PhotosSnapshot;
+			packageProductDependencies = (
+				1B8EEE6A297CAFF1004B3F2E /* ArgumentParser */,
+			);
 			productName = PhotosSnapshot;
 			productReference = 1B7ED2C02976D016006FC7FD /* PhotosSnapshot */;
 			productType = "com.apple.product-type.tool";
@@ -129,6 +134,9 @@
 				Base,
 			);
 			mainGroup = 1B7ED2B72976D016006FC7FD;
+			packageReferences = (
+				1B8EEE69297CAFF1004B3F2E /* XCRemoteSwiftPackageReference "swift-argument-parser" */,
+			);
 			productRefGroup = 1B7ED2C12976D016006FC7FD /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -147,7 +155,7 @@
 				1B271C662977C4BA00749F13 /* PhotosList.swift in Sources */,
 				1BE1457C297781CD00E9DDE3 /* PhotosAccess.swift in Sources */,
 				1B947269297C095E00E1B438 /* FetchStats.swift in Sources */,
-				1B7ED2C42976D016006FC7FD /* main.swift in Sources */,
+				1B8EEE6D297CB442004B3F2E /* CmdLineArgs.swift in Sources */,
 				1B6C98A8297A7A880058B76F /* PhotosSnapshot.swift in Sources */,
 				1B6C6E832977F1BF00A0EF38 /* PhotosFetch.swift in Sources */,
 			);
@@ -313,6 +321,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		1B8EEE69297CAFF1004B3F2E /* XCRemoteSwiftPackageReference "swift-argument-parser" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-argument-parser.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		1B8EEE6A297CAFF1004B3F2E /* ArgumentParser */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1B8EEE69297CAFF1004B3F2E /* XCRemoteSwiftPackageReference "swift-argument-parser" */;
+			productName = ArgumentParser;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 1B7ED2B82976D016006FC7FD /* Project object */;
 }

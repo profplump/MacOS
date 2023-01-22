@@ -14,21 +14,19 @@ class PhotosFetch {
     let resourceManager: PHAssetResourceManager
     let fetchOptions: PHAssetResourceRequestOptions
     let dispatchGroup: DispatchGroup
-    let warnExists: Bool
+    let options: CmdLineArgs
     
-    init() {
+    init(cmdLineArgs: CmdLineArgs) {
+        options = cmdLineArgs
         fetchStats = FetchStats()
         resourceManager = PHAssetResourceManager()
         dispatchGroup = DispatchGroup()
         
         fetchOptions = PHAssetResourceRequestOptions()
-        if (ProcessInfo.processInfo.environment.index(forKey: "NO_NETWORK") != nil) {
+        fetchOptions.isNetworkAccessAllowed = !options.localOnly
+        if (options.verbose && !fetchOptions.isNetworkAccessAllowed) {
             print("Excluding network assets")
-            fetchOptions.isNetworkAccessAllowed = false
-        } else {
-            fetchOptions.isNetworkAccessAllowed = true
         }
-        warnExists = (ProcessInfo.processInfo.environment.index(forKey: "WARN_EXISTS") != nil)
     }
     
     func fetchAssets(media: PHFetchResult<PHAsset>, destFolder: URL) -> FetchStats {
@@ -60,7 +58,7 @@ class PhotosFetch {
         
         /** Do not overwrite **/
         if (FileManager.default.fileExists(atPath: dest.path)) {
-            fetchStats.record(resource: resource, success: !warnExists)
+            fetchStats.record(resource: resource, success: !options.warnExists)
             dispatchGroup.leave()
             return
         }
@@ -108,12 +106,14 @@ class PhotosFetch {
             } else {
                 // Videos are allowed a modifed still with no original still
                 if (resources.first?.type != .video && modified.count > 0 && modified.first?.type == PHAssetResourceType.fullSizePhoto) {
+                    // TODO: stderr
                     print("No original resource: \(ResourceUtils.uuid(id: id))")
                 }
             }
             if (modified.count > 0) {
                 valid.append(modified.first!)
                 if (modified.count > 1) {
+                    // TODO: stderr
                     print("Invalid modified resources: \(ResourceUtils.uuid(id: id))")
                 }
             }

@@ -11,21 +11,25 @@ import Photos
 
 class PhotosList {
     private let fetchOptions: PHFetchOptions
+    private let options: CmdLineArgs
     
-    init() {
+    init(cmdLineArgs: CmdLineArgs) {
+        options = cmdLineArgs
+
         fetchOptions = PHFetchOptions()
-        if (ProcessInfo.processInfo.environment.index(forKey: "NO_HIDDEN") != nil) {
-            print("Excluding hidden assets")
-            fetchOptions.includeHiddenAssets = false
-        } else {
-            fetchOptions.includeHiddenAssets = true
-        }
+        fetchOptions.includeHiddenAssets = !options.noHidden
         fetchOptions.includeAllBurstAssets = false
         fetchOptions.includeAssetSourceTypes = [PHAssetSourceType.typeUserLibrary]
         fetchOptions.wantsIncrementalChangeDetails = false
-        if let value = ProcessInfo.processInfo.environment["FETCH_LIMIT"] {
-            print("Limiting fetch to \(value) assets")
-            fetchOptions.fetchLimit = Int(value)!
+        fetchOptions.fetchLimit = options.fetchLimit ?? 0
+
+        if (options.verbose) {
+            if (!fetchOptions.includeHiddenAssets) {
+                print("Excluding hidden assets")
+            }
+            if (fetchOptions.fetchLimit > 0) {
+                print("Limiting fetch to \(fetchOptions.fetchLimit) assets")
+            }
         }
     }
     
@@ -52,7 +56,9 @@ class PhotosList {
             mediaOptions.predicate = NSPredicate(format: "creationDate >= %@ OR modificationDate >= %@", predicateDate, predicateDate)
         }
         mediaOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-        //print("Media options: \(mediaOptions)")
+        if (options.verbose) {
+            print("Media options: \(mediaOptions)")
+        }
         return PHAsset.fetchAssets(with: mediaType, options: mediaOptions)
     }
     

@@ -29,6 +29,7 @@ class PhotosAccess {
             (status:PHAuthorizationStatus) in
             self.semaphore.signal()
             if (status != PHAuthorizationStatus.authorized) {
+                // TODO: stderr
                 print("Not authorized to access the photo library")
                 return
             }
