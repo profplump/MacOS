@@ -65,13 +65,13 @@ parent
 : Create a new incremental backup using <base> as a prior snapshot. Fetches only resources that have changed since the timestamp of `<base>` or the provided `--compare-date`
 
 --clone
-: Use APFS clones to resources in `<base>` to create a complete snapshot without re-fetching unchanged resources. Implies --incremental
+: Use APFS clones to resources in `<base>` to create a complete snapshot without re-fetching unchanged resources. Implies `--incremental`
 
 --hardlinks
-: Use hardlinks to resources in `<base>` to create a complete snapshot without re-fetching unchanged resources. Implies --incremental
+: Use hardlinks to resources in `<base>` to create a complete snapshot without re-fetching unchanged resources. Implies `--incremental`
 
 --symlinks
-: Use symlinks to resources in `<base>` to create a complete snapshot without re-fetching unchanged resources. Implies --incremental
+: Use symlinks to resources in `<base>` to create a complete snapshot without re-fetching unchanged resources. Implies `--incremental`
 
 --uuid
 : One or more UUIDs to fetch. This option does not support the media-types filter or incremental operation
