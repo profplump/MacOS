@@ -81,6 +81,18 @@ struct CmdLineArgs: ParsableCommand {
         if (base != nil && (!append && !incremental)) {
             append = true
         }
+        if (!uuid.isEmpty) {
+            if (mediaTypes != default_mediaTypes) {
+                // TODO: stderr
+                print("UUID-based fetches ignores media-types")
+                mediaTypes = default_mediaTypes
+            }
+            if (incremental) {
+                // TODO: stderr
+                print("UUID-based fetches does not support incremental operations")
+                return
+            }
+        }
         if (append && incremental) {
             // TODO: stderr
             print("Append and incremental operations are mutually exclusive")
@@ -89,11 +101,6 @@ struct CmdLineArgs: ParsableCommand {
         if ((append || incremental) && base == nil) {
             // TODO: stderr
             print("Append and incremental operations require a -b <base> folder")
-            return
-        }
-        if (!uuid.isEmpty && (incremental || mediaTypes != default_mediaTypes)) {
-            // TODO: stderr
-            print("UUID-based fetches disable incremental operations and media-types filters")
             return
         }
         
