@@ -60,13 +60,21 @@ class PhotosFetch {
             return
         }
         
-        /** Do not overwrite **/
+        // Do not overwrite
         if (FileManager.default.fileExists(atPath: dest.path)) {
             fetchStats.record(resource: resource, success: !options.warnExists)
             dispatchGroup.leave()
             return
         }
         
+        // Fake it for dry runs
+        if (options.dryRun) {
+            FileManager.default.createFile(atPath: dest.path, contents: nil)
+            dispatchGroup.leave()
+            return
+        }
+        
+        // Fetch to filesystem
         resourceManager.writeData(for: resource, toFile: dest, options: fetchOptions) { (error) in
             self.fetchStats.record(resource: resource, success: (error == nil))
             self.dispatchGroup.leave()

@@ -93,6 +93,9 @@ parent
 --no-hidden
 : Do not include Hidden assets in fetch results
 
+--dry-run
+: Do not copy resource content, just create empty files
+
 --verbose
 : Enable additional runtime output
 
@@ -103,7 +106,8 @@ Environmental variables will override command-line parameters of the same name
 
 - MEDIA_TYPES
 - FETCH_LIMIT
-- WARN_EXISTS
 - DATE_FORMAT
-- NO_HIDDEN
+- WARN_EXISTS
 - LOCAL_ONLY
+- NO_HIDDEN
+- DRY_RUN

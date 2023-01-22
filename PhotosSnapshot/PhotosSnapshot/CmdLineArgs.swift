@@ -38,7 +38,7 @@ struct CmdLineArgs: ParsableCommand {
     @Option(name: .shortAndLong, help: "A DateFormatter format string for use in naming snapshot folders. Default: yyyy-MM-dd_hh-mm-ss")
     var dateFormat: String = default_dateFormat
 
-    @Flag(name: .shortAndLong, help: "Warn if a resource file already exists at the output path. Otherwise this file is treated as a successful download. Default: false")
+    @Flag(name: .shortAndLong, help: "Warn if a resource file already exists at the output path. Otherwise this file is treated as a successful fetch. Default: false")
     var warnExists: Bool = false
 
     @Flag(name: .shortAndLong, help: "Disable network (iCloud) fetch requests -- only process local assets")
@@ -46,6 +46,9 @@ struct CmdLineArgs: ParsableCommand {
 
     @Flag(name: .shortAndLong, help: "Do not include Hidden assets in fetch results")
     var noHidden: Bool = false
+    
+    @Flag(name: .shortAndLong, help: "Do not fetch resource content, just create empty files")
+    var dryRun: Bool = false
         
     @Flag(name: .shortAndLong, help: "Print additional runtime information")
     var verbose: Bool = false
@@ -58,6 +61,9 @@ struct CmdLineArgs: ParsableCommand {
         }
         if (env.index(forKey: "WARN_EXISTS") != nil) {
             warnExists = true
+        }
+        if (env.index(forKey: "DRY_RUN") != nil) {
+            dryRun = true
         }
         if let value = env["DATE_FORMAT"] {
              dateFormat = value

@@ -15,8 +15,6 @@ class PhotosSnapshot {
     let access: PhotosAccess
     let list: PhotosList
     var parentFolder: URL
-    var destFolder: URL
-    var mediaTypes: [ PHAssetMediaType: Bool ]
     var assetSets: [PHFetchResult<PHAsset>]
     
     init(cmdLineArgs: CmdLineArgs) {
@@ -24,8 +22,6 @@ class PhotosSnapshot {
         access = PhotosAccess()
         list = PhotosList(cmdLineArgs: options)
         parentFolder = URL(fileURLWithPath: options.parent)
-        destFolder = URL(fileURLWithPath: options.parent)
-        mediaTypes = [.audio: false, .image: false, .video: false]
         assetSets = []
     }
 
@@ -37,13 +33,13 @@ class PhotosSnapshot {
         }
         
         // Figure out where we are writing
-        destFolder = buildDestURL()
+        let destFolder = buildDestURL()
         if (options.verbose) {
             print("Writing to folder: \(destFolder)")
         }
         
         // Figure out what assets we are fetching
-        selectMediaTypes()
+        let mediaTypes = buildMediaTypes()
         if (!options.uuid.isEmpty) {
             // Find assets with provided assetLocalIDs (i.e. ZUUIDs)
             processUUIDs(uuids: options.uuid)
@@ -116,8 +112,9 @@ class PhotosSnapshot {
         return URL(fileURLWithPath: parentFolder.path + "/" + date + "/")
     }
     
-    func selectMediaTypes() {
+    func buildMediaTypes() -> [ PHAssetMediaType: Bool ]  {
         // User-specified media types
+        var mediaTypes: [ PHAssetMediaType: Bool ] = [ PHAssetMediaType: Bool ]()
         if (options.verbose) {
             print("Select media types: \(options.mediaTypes)")
         }
@@ -130,6 +127,7 @@ class PhotosSnapshot {
         if (options.mediaTypes.firstIndex(of: "V") != nil) {
             mediaTypes[.video] = true
         }
+        return mediaTypes
     }
     
     func processAssets(mediaType: PHAssetMediaType) {
