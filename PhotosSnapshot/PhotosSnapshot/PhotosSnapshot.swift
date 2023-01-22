@@ -14,6 +14,7 @@ class PhotosSnapshot {
     let options: CmdLineArgs
     let access: PhotosAccess
     let list: PhotosList
+    var oldestDate: Date?
     var parentFolder: URL
     var assetSets: [PHFetchResult<PHAsset>]
     
@@ -23,6 +24,7 @@ class PhotosSnapshot {
         list = PhotosList(cmdLineArgs: options)
         parentFolder = URL(fileURLWithPath: options.parent)
         assetSets = []
+        oldestDate = nil
     }
 
     func main() throws {
@@ -35,7 +37,15 @@ class PhotosSnapshot {
         // Figure out where we are writing
         let destFolder = buildDestURL()
         if (options.verbose) {
-            print("Writing to folder: \(destFolder)")
+            var operation: String
+            if (options.append) {
+                operation = "append"
+            } else if (options.incremental) {
+                operation = "incremental"
+            } else {
+                operation = "snapshot"
+            }
+            print("\(operation.localizedCapitalized)ing to: \(destFolder)")
         }
         
         // Figure out what assets we are fetching
@@ -89,34 +99,66 @@ class PhotosSnapshot {
     }
     
     func buildDestURL() -> URL {
-        var date = String();
+        var subFolder = String();
+        
+        // Setup to print and parse dates
+        let dateFormatter = DateFormatter()
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dateFormatter.dateFormat = options.dateFormat
+        if (options.verbose) {
+            print("Date Format: \(dateFormatter.dateFormat!)")
+        }
+        
+        // Validate the base folder, if provided
+        var baseURL: URL
         if (options.base != nil) {
-            if (options.append) {
-                if (options.verbose) {
-                    print("Appending to folder: \(options.base!)")
-                }
-                date = options.base!
-            } else if (options.incremental) {
-                print("Not yet implemented")
-                exit(-5)
+            baseURL = URL(fileURLWithPath: options.base!, relativeTo: parentFolder)
+            var isDir: ObjCBool = true
+            if (!FileManager.default.fileExists(atPath: baseURL.path, isDirectory: &isDir)) {
+                // TODO: stderr
+                print("Base folder does not exist: \(baseURL)")
+                exit(-1)
             }
         } else {
-            let dateFormatter = DateFormatter()
-            dateFormatter.locale = Locale(identifier: "en_US_POSIX")
-            dateFormatter.dateFormat = options.dateFormat
-            if (options.verbose) {
-                print("Using date format string: \(dateFormatter.dateFormat!)")
-            }
-            date = dateFormatter.string(from: Date())
+            // This isn't used but it saves a lot of ! and ?
+            baseURL = parentFolder
         }
-        return URL(fileURLWithPath: parentFolder.path + "/" + date + "/")
+        
+        // Parse a modification date from the base folder date
+        if (options.incremental) {
+            // TODO: Should we take a date from the command line?
+            oldestDate = dateFormatter.date(from: baseURL.lastPathComponent)
+            if (oldestDate == nil) {
+                // TODO: stderr
+                print("Unable to parse subfolder datetime: \(baseURL.lastPathComponent)")
+                exit(-1)
+            }
+            if (options.verbose) {
+                print("Incremental Date: \(oldestDate!)")
+            }
+
+            print("")
+            print("")
+            print("Incremental: Not yet implemented")
+            print("This does fetch modified/new assets, but does not create the rest of the snapshot")
+            print("Currently this only checks the asset create/modified timestamp, not individual resource timestamps")
+            print("")
+        }
+        
+        // Unless we are appending, target a new destination
+        if (options.append) {
+            subFolder = baseURL.lastPathComponent
+        } else {
+            subFolder = dateFormatter.string(from: Date())
+        }
+        return URL(fileURLWithPath: (parentFolder.path + "/" + subFolder + "/"))
     }
     
     func buildMediaTypes() -> [ PHAssetMediaType: Bool ]  {
         // User-specified media types
         var mediaTypes: [ PHAssetMediaType: Bool ] = [ PHAssetMediaType: Bool ]()
         if (options.verbose) {
-            print("Select media types: \(options.mediaTypes)")
+            print("Media types: \(options.mediaTypes)")
         }
         if (options.mediaTypes.firstIndex(of: "A") != nil)  {
             mediaTypes[.audio] = true
@@ -134,16 +176,15 @@ class PhotosSnapshot {
         if (options.verbose) {
             print("Listing type \(mediaType.rawValue) assets")
         }
-        let assets = list.media(mediaType: mediaType)
-        /**
-        let assets = list.media(mediaType: mediaType, oldestDate: Date(timeIntervalSinceNow: -86400))
-        for i in 0...assets.count-1 {
-            let asset = assets.object(at: i)
-            print("Asset: \(Utils.uuid(id: asset.localIdentifier))")
-            print("\tCreated: \(String(describing: asset.creationDate))")
-            print("\tModified: \(String(describing: asset.modificationDate))")
+        let assets = list.media(mediaType: mediaType, oldestDate: oldestDate)
+        if (false && options.verbose) {
+            for i in 0...assets.count-1 {
+                let asset = assets.object(at: i)
+                print("Asset: \(ResourceUtils.uuid(id: asset.localIdentifier))")
+                print("\tCreated: \(String(describing: asset.creationDate))")
+                print("\tModified: \(String(describing: asset.modificationDate))")
+            }
         }
-         **/
         appendAssets(assets: assets)
         if (options.verbose) {
             print("Found \(assets.count) type \(mediaType.rawValue) assets")

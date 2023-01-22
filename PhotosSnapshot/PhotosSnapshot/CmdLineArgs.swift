@@ -47,7 +47,7 @@ struct CmdLineArgs: ParsableCommand {
     @Flag(name: .shortAndLong, help: "Do not include Hidden assets in fetch results")
     var noHidden: Bool = false
     
-    @Flag(name: .shortAndLong, help: "Do not fetch resource content, just create empty files")
+    @Flag(name: [.customShort("r"), .long], help: "Do not fetch resource content, just create empty files")
     var dryRun: Bool = false
         
     @Flag(name: .shortAndLong, help: "Print additional runtime information")
@@ -113,7 +113,7 @@ struct CmdLineArgs: ParsableCommand {
         
         // Start chatting
         if (verbose) {
-            print("Verbose output enabled")
+            print("Verbose: Enabled")
         }
                
         // Run it

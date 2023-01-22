@@ -25,10 +25,10 @@ class PhotosList {
 
         if (options.verbose) {
             if (!fetchOptions.includeHiddenAssets) {
-                print("Excluding hidden assets")
+                print("No Hidden: Excluding Hidden assets")
             }
             if (fetchOptions.fetchLimit > 0) {
-                print("Limiting fetch to \(fetchOptions.fetchLimit) assets")
+                print("Fetch Limit: \(fetchOptions.fetchLimit) assets")
             }
         }
     }
@@ -52,8 +52,7 @@ class PhotosList {
     func media(mediaType: PHAssetMediaType, oldestDate: Date? = nil) -> PHFetchResult<PHAsset> {
         let mediaOptions = fetchOptions
         if (oldestDate != nil) {
-            let predicateDate = oldestDate! as CVarArg
-            mediaOptions.predicate = NSPredicate(format: "creationDate >= %@ OR modificationDate >= %@", predicateDate, predicateDate)
+            mediaOptions.predicate = NSPredicate(format: "creationDate >= %@ OR modificationDate >= %@", oldestDate! as NSDate, oldestDate! as NSDate)
         }
         mediaOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
         if (options.verbose) {

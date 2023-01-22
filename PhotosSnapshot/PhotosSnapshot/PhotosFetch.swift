@@ -24,8 +24,13 @@ class PhotosFetch {
         
         fetchOptions = PHAssetResourceRequestOptions()
         fetchOptions.isNetworkAccessAllowed = !options.localOnly
-        if (options.verbose && !fetchOptions.isNetworkAccessAllowed) {
-            print("Excluding network assets")
+        if (options.verbose) {
+            if (!fetchOptions.isNetworkAccessAllowed) {
+                print("Local Only: Skipping network assets")
+            }
+            if (options.dryRun) {
+                print("Dry Run: Will create empty resource files")
+            }
         }
     }
     
@@ -35,7 +40,7 @@ class PhotosFetch {
             for resource in findSupportedResources(resources: resources) {
                 dispatchGroup.enter()
                 DispatchQueue.global(qos: .utility).async {
-                    self.readFile(resource: resource, parentFolder: destFolder)
+                    self.readFile(resource: resource, destFolder: destFolder)
                 }
             }
         }
@@ -44,12 +49,12 @@ class PhotosFetch {
         return fetchStats
     }
     
-    func readFile(resource: PHAssetResource, parentFolder: URL) {
+    func readFile(resource: PHAssetResource, destFolder: URL) {
         let filename = ResourceUtils.path(resource: resource)
         if (options.verbose) {
             print("Fetching: \(filename)")
         }
-        let dest = URL(fileURLWithPath: filename, relativeTo: parentFolder)
+        let dest = URL(fileURLWithPath: filename, relativeTo: destFolder)
         do {
             try FileManager.default.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
         } catch {
@@ -70,6 +75,7 @@ class PhotosFetch {
         // Fake it for dry runs
         if (options.dryRun) {
             FileManager.default.createFile(atPath: dest.path, contents: nil)
+            fetchStats.record(resource: resource, success: true)
             dispatchGroup.leave()
             return
         }
