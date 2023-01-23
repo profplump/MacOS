@@ -51,6 +51,24 @@ class PhotosSnapshot {
             print("\(operation.localizedCapitalized)ing to: \(destFolder)")
         }
         
+        // Make sure the filesystem supports our plans
+        do {
+            let volCapabilities = try parentFolder.resourceValues(forKeys: [ .volumeSupportsSymbolicLinksKey, .volumeSupportsHardLinksKey, .volumeSupportsFileCloningKey])
+            if (options.clone && !volCapabilities.volumeSupportsFileCloning!) {
+                print("Clone requested but volume does not support clonefile()")
+                return
+            } else if (options.hardlink && !volCapabilities.volumeSupportsHardLinks!) {
+                print("Hardlink requested but volume does not support hardlinks")
+                return
+            } else if (options.symlink && !volCapabilities.volumeSupportsSymbolicLinks!) {
+                print("Symlink requested but volume does not support symlinks")
+                return
+            }
+        } catch {
+            print("Error determining volume support for thin copies: \(error)")
+            return
+        }
+        
         // Figure out what assets we are fetching
         let mediaTypes = buildMediaTypes()
         if (!options.uuid.isEmpty) {
@@ -143,11 +161,11 @@ class PhotosSnapshot {
             }
 
             print("")
-            print("Incremental: Work in progress. Currently this operation only checks the asset create/modified timestamp, not individual resource timestamps")
-            if (options.clone || options.hardlink || options.symlink) {
-                print("Thin snapshots using --clone, --hardlink, or --symlink are not yet implemented.")
-                print("Reverting to --incremental operation")
-            }
+            print("Incremental: Work in progress. You've been warned.")
+            print("")
+            print("Note in particular two limitations:")
+            print("\tNo effort is made to check the validity of the file in <base>. Thin copies will point to whatever is there, if something at the right path exists")
+            print("\tEven when not making a thin copy, this only checks asset-level timestamps")
             print("")
         }
         

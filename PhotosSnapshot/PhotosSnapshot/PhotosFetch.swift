@@ -61,7 +61,7 @@ class PhotosFetch {
             try FileManager.default.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
         } catch {
             // TODO: stderr
-            print("Unable to create asset folder: \(dest.deletingLastPathComponent())")
+            print("Unable to create asset folder: \(dest.deletingLastPathComponent().path)")
             fetchStats.record(resource: resource, success: false)
             dispatchGroup.leave()
             return
@@ -91,31 +91,28 @@ class PhotosFetch {
         }
         
         // Handle all the thin-copy options, if we have a valid target
-        if (options.clone || options.hardlink || options.symlink && targetValid) {
-            print("Base URL: \(baseFolder)")
-            print("Dest URL: \(dest)")
-            print("Target URL: \(target)")
-
-            // TODO: Check for filesystem support
+        if ((options.clone || options.hardlink || options.symlink) && targetValid) {
             var verb = String()
             if (options.clone) {
                 verb = "Clon"
                 do {
-                    try FileManager.default.copyItem(at: dest, to: target)
+                    // I'm told this will clone when available, and we check for volume support
+                    // But there is no direct test to tell when this copies instead of cloning
+                    try FileManager.default.copyItem(at: target, to: dest)
                     fetchStats.record(resource: resource, success: true)
                 } catch {
                      // TODO: stderr
-                     print("Unable to create hardlink at \(dest): \(error)")
+                     print("Unable to create clone at \(dest.path)")
                      fetchStats.record(resource: resource, success: false)
                  }
             } else if (options.hardlink) {
                 verb = "Hardlink"
                 do {
-                    try FileManager.default.linkItem(at: dest, to: target)
+                    try FileManager.default.linkItem(at: target, to: dest)
                     fetchStats.record(resource: resource, success: true)
                 } catch {
                      // TODO: stderr
-                     print("Unable to create hardlink at \(dest): \(error)")
+                     print("Unable to create hardlink at \(dest.path)")
                      fetchStats.record(resource: resource, success: false)
                  }
             } else if (options.symlink) {
@@ -125,7 +122,7 @@ class PhotosFetch {
                     fetchStats.record(resource: resource, success: true)
                 } catch {
                      // TODO: stderr
-                     print("Unable to create symlink at \(dest): \(error)")
+                     print("Unable to create symlink at \(dest.path)")
                      fetchStats.record(resource: resource, success: false)
                  }
             }

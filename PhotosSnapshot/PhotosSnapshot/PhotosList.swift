@@ -55,9 +55,6 @@ class PhotosList {
             mediaOptions.predicate = NSPredicate(format: "creationDate >= %@ OR modificationDate >= %@", oldestDate! as NSDate, oldestDate! as NSDate)
         }
         mediaOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-        if (options.verbose) {
-            print("Media options: \(mediaOptions)")
-        }
         return PHAsset.fetchAssets(with: mediaType, options: mediaOptions)
     }
     
