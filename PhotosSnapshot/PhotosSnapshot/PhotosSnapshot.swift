@@ -14,20 +14,15 @@ class PhotosSnapshot {
     let options: CmdLineArgs
     let access: PhotosAccess
     let list: PhotosList
-    var oldestDate: Date?
-    var parentFolder: URL
-    var baseFolder: URL
+    let fetchPaths: FetchPaths
     var assetSets: [PHFetchResult<PHAsset>]
     
     init(cmdLineArgs: CmdLineArgs) {
         options = cmdLineArgs
         access = PhotosAccess()
         list = PhotosList(cmdLineArgs: options)
-        parentFolder = URL(fileURLWithPath: options.parent)
-        parentFolder.standardize()
-        baseFolder = URL(fileURLWithPath: "")
+        fetchPaths = FetchPaths(parentFolder: URL(fileURLWithPath: options.parent))
         assetSets = []
-        oldestDate = nil
     }
 
     func main() {
@@ -38,7 +33,7 @@ class PhotosSnapshot {
         }
         
         // Figure out where we are writing
-        let destFolder = buildDestURL()
+        buildDestURL()
         if (options.verbose) {
             var operation: String
             if (options.append) {
@@ -48,12 +43,12 @@ class PhotosSnapshot {
             } else {
                 operation = "snapshot"
             }
-            print("\(operation.localizedCapitalized)ing to: \(destFolder)")
+            print("\(operation.localizedCapitalized)ing to: \(fetchPaths.destFolder)")
         }
         
         // Make sure the filesystem supports our plans
         do {
-            let volCapabilities = try parentFolder.resourceValues(forKeys: [ .volumeSupportsSymbolicLinksKey, .volumeSupportsHardLinksKey, .volumeSupportsFileCloningKey])
+            let volCapabilities = try fetchPaths.parentFolder.resourceValues(forKeys: [ .volumeSupportsSymbolicLinksKey, .volumeSupportsHardLinksKey, .volumeSupportsFileCloningKey])
             if (options.clone && !volCapabilities.volumeSupportsFileCloning!) {
                 print("Clone requested but volume does not support clonefile()")
                 return
@@ -95,9 +90,9 @@ class PhotosSnapshot {
             if (options.verbose) {
                 print("Fetching \(assets.count) assets")
             }
-            let fetchStats = fetch.fetchAssets(media: assets, destFolder: destFolder, baseFolder: baseFolder)
+            let fetchStats = fetch.fetchAssets(media: assets, fetchPaths: fetchPaths)
             if (options.verbose) {
-                print("Resources: \(fetchStats.resourceSuccess.count)/\(fetchStats.resourceError.count) success/fail")
+                print("Resources: \(fetchStats.resourceSuccess.count)/\(fetchStats.resourceError.count) success/failure")
             }
             print("Fetched \(fetchStats.assetSuccess.count) of \(assets.count) assets with \(fetchStats.assetError.count) errors")
             if (fetchStats.assetError.count > 0) {
@@ -119,7 +114,7 @@ class PhotosSnapshot {
         }
     }
     
-    func buildDestURL() -> URL {
+    func buildDestURL() {
         var subFolder = String();
         
         // Setup to print and parse dates
@@ -132,54 +127,46 @@ class PhotosSnapshot {
         
         // Validate the base folder, if provided
         if (options.base != nil) {
-            baseFolder = URL(fileURLWithPath: options.base!, relativeTo: parentFolder)
+            fetchPaths.baseFolder = URL(fileURLWithPath: options.base!, relativeTo: fetchPaths.parentFolder)
             var isDir: ObjCBool = true
-            if (!FileManager.default.fileExists(atPath: baseFolder.path, isDirectory: &isDir)) {
+            if (!FileManager.default.fileExists(atPath: fetchPaths.baseFolder.path, isDirectory: &isDir)) {
                 // TODO: stderr
-                print("Base folder does not exist: \(baseFolder)")
+                print("Base folder does not exist: \(fetchPaths.baseFolder)")
                 exit(-1)
             }
         }
         
         // Parse a modification date from the base folder date
         if (options.incremental) {
+            var compareString: String
             if (options.compareDate != nil) {
-                oldestDate = dateFormatter.date(from: options.compareDate!)
-                if (options.verbose) {
-                    print("Compare Date: \(options.compareDate!)")
-                }
+                compareString = options.compareDate!
+                print("Compare Date: \(options.compareDate!)")
             } else {
-                oldestDate = dateFormatter.date(from: baseFolder.lastPathComponent)
+                compareString = fetchPaths.baseFolder.lastPathComponent
             }
-            if (oldestDate == nil) {
+            fetchPaths.compareDate = dateFormatter.date(from: compareString)
+            if (fetchPaths.compareDate == nil) {
                 // TODO: stderr
-                print("Unable to parse subfolder datetime: \(baseFolder.lastPathComponent)")
+                print("Unable to parse compare date: \(compareString)")
                 exit(-1)
             }
             if (options.verbose) {
-                print("Incremental Date: \(oldestDate!)")
+                print("Incremental Date: \(fetchPaths.compareDate!)")
             }
-
-            print("")
-            print("Incremental: Work in progress. You've been warned.")
-            print("")
-            print("Note in particular two limitations:")
-            print("\tNo effort is made to check the validity of the file in <base>. Thin copies will point to whatever is there, if something at the right path exists")
-            print("\tEven when not making a thin copy, this only checks asset-level timestamps")
-            print("")
         }
         
         // Unless we are appending, target a new destination
         if (options.append) {
-            subFolder = baseFolder.lastPathComponent
+            subFolder = fetchPaths.baseFolder.lastPathComponent
         } else {
             subFolder = dateFormatter.string(from: Date())
         }
 
         // Build the URL
-        var destURL = parentFolder
+        var destURL = fetchPaths.parentFolder
         destURL.append(component: subFolder + "/")
-        return destURL
+        fetchPaths.destFolder = destURL
     }
     
     func buildMediaTypes() -> [ PHAssetMediaType: Bool ]  {
@@ -204,15 +191,14 @@ class PhotosSnapshot {
         if (options.verbose) {
             print("Listing type \(mediaType.rawValue) assets")
         }
-        var listDate: Date?
+
+        // Restrict the list when we are doing a non-linked incremental operation
+        var listDate: Date? = nil
         if (options.incremental && !(options.clone || options.hardlink || options.symlink)) {
-            // Only restrict the list step when we are doing a non-linked incremental snapshot
-            listDate = oldestDate
-        } else {
-            // Otherwise fetch everything and filter the resources directly
-            listDate = nil
+            listDate = fetchPaths.compareDate
         }
-        let assets = list.media(mediaType: mediaType, oldestDate: listDate)
+
+        let assets = list.media(mediaType: mediaType, compareDate: listDate)
         appendAssets(assets: assets)
         if (options.verbose) {
             print("Found \(assets.count) type \(mediaType.rawValue) assets")

@@ -34,13 +34,21 @@ class PhotosFetch {
         }
     }
     
-    func fetchAssets(media: PHFetchResult<PHAsset>, destFolder: URL, baseFolder: URL) -> FetchStats {
+    func fetchAssets(media: PHFetchResult<PHAsset>, fetchPaths: FetchPaths) -> FetchStats {
         for i in 0...media.count-1 {
-            let resources = PHAssetResource.assetResources(for: media.object(at: i))
+            let asset = media.object(at: i)
+            let resources = PHAssetResource.assetResources(for: asset)
             for resource in findSupportedResources(resources: resources) {
+                var baseAssetValid = false
+                if (fetchPaths.compareDate != nil && asset.creationDate != nil && asset.modificationDate != nil) {
+                    if (max(asset.creationDate!, asset.modificationDate!) < fetchPaths.compareDate!) {
+                        baseAssetValid = true
+                    }
+                }
+                
                 dispatchGroup.enter()
                 DispatchQueue.global(qos: .utility).async {
-                    self.readFile(resource: resource, destFolder: destFolder, baseFolder: baseFolder)
+                    self.readFile(asset: asset, resource: resource, destFolder: fetchPaths.destFolder, baseFolder: fetchPaths.baseFolder, allowBaseReference: baseAssetValid)
                 }
             }
         }
@@ -49,32 +57,22 @@ class PhotosFetch {
         return fetchStats
     }
     
-    func readFile(resource: PHAssetResource, destFolder: URL, baseFolder: URL) {
+    func readFile(asset: PHAsset, resource: PHAssetResource, destFolder: URL, baseFolder: URL, allowBaseReference: Bool) {
         let filename = ResourceUtils.path(resource: resource)
         let dest = URL(fileURLWithPath: filename, relativeTo: destFolder)
-        let target =  URL(fileURLWithPath: filename, relativeTo: baseFolder)
-        var targetValid: Bool = false
-
+        let target = URL(fileURLWithPath: filename, relativeTo: baseFolder)
+        
         // Ensure we have an asset folder
         do {
-            // Is it cheaper to check for this path to exist first?
             try FileManager.default.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
         } catch {
             // TODO: stderr
-            print("Unable to create asset folder: \(dest.deletingLastPathComponent().path)")
             fetchStats.record(resource: resource, success: false)
+            print("Unable to create asset folder: \(dest.deletingLastPathComponent().path)")
             dispatchGroup.leave()
             return
         }
-        
-        // If we are incremental, check for a valid target in baseFolder
-        if (options.incremental) {
-            if (FileManager.default.fileExists(atPath: target.path)) {
-                // TODO: Check that we have the right version of this file
-                targetValid = true
-            }
-        }
-        
+
         // Do not overwrite
         if (FileManager.default.fileExists(atPath: dest.path)) {
             fetchStats.record(resource: resource, success: !options.warnExists)
@@ -86,45 +84,33 @@ class PhotosFetch {
         if (options.dryRun) {
             FileManager.default.createFile(atPath: dest.path, contents: nil)
             fetchStats.record(resource: resource, success: true)
+            if (options.verbose) {
+                print("Dry Running: \(filename)")
+            }
             dispatchGroup.leave()
             return
         }
         
-        // Handle all the thin-copy options, if we have a valid target
-        if ((options.clone || options.hardlink || options.symlink) && targetValid) {
+        // Handle all the thin-copy options, if we have a valid baseReference
+        let targetValid = (allowBaseReference && options.incremental && FileManager.default.fileExists(atPath: target.path))
+        if (targetValid && (options.clone || options.hardlink || options.symlink)) {
             var verb = String()
-            if (options.clone) {
-                verb = "Clon"
-                do {
-                    // I'm told this will clone when available, and we check for volume support
-                    // But there is no direct test to tell when this copies instead of cloning
+            do {
+                if (options.clone) {
+                    verb = "Clon"
                     try FileManager.default.copyItem(at: target, to: dest)
-                    fetchStats.record(resource: resource, success: true)
-                } catch {
-                     // TODO: stderr
-                     print("Unable to create clone at \(dest.path)")
-                     fetchStats.record(resource: resource, success: false)
-                 }
-            } else if (options.hardlink) {
-                verb = "Hardlink"
-                do {
+                } else if (options.hardlink) {
+                    verb = "Hardlink"
                     try FileManager.default.linkItem(at: target, to: dest)
-                    fetchStats.record(resource: resource, success: true)
-                } catch {
-                     // TODO: stderr
-                     print("Unable to create hardlink at \(dest.path)")
-                     fetchStats.record(resource: resource, success: false)
-                 }
-            } else if (options.symlink) {
-                verb = "Symlink"
-                do {
+                } else if (options.symlink) {
+                    verb = "Symlink"
                     try FileManager.default.createSymbolicLink(at: dest, withDestinationURL: target)
-                    fetchStats.record(resource: resource, success: true)
-                } catch {
-                     // TODO: stderr
-                     print("Unable to create symlink at \(dest.path)")
-                     fetchStats.record(resource: resource, success: false)
-                 }
+                }
+                fetchStats.record(resource: resource, success: true)
+            } catch {
+                // TODO: stderr
+                print("Unable to create thin copy at \(dest.path)")
+                fetchStats.record(resource: resource, success: false)
             }
             
             if (options.verbose) {
@@ -134,7 +120,7 @@ class PhotosFetch {
             return
         }
         
-        // Fetch to filesystem
+        // Fetch to filesystem if we didn't find a better option above
         resourceManager.writeData(for: resource, toFile: dest, options: fetchOptions) { (error) in
             self.fetchStats.record(resource: resource, success: (error == nil))
             self.dispatchGroup.leave()

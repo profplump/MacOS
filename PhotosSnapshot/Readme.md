@@ -1,16 +1,14 @@
 # PhotosSnapshot
 
-PhotosSnapshot is a command-line tool for creating backups of Apple Photos assets. It can process both locally-stored files and iCloud data and is built on the PhotoKit SDK.
+PhotosSnapshot is a command-line tool for creating backups of Apple Photos assets. It can process both locally-stored files and iCloud data and is built on the PhotoKit SDK. It is intended to produce stand-alone filesystem-based backups of all assets in the Photos Library, and can produce Time Machine-like thin-copy snapshots for efficient but complete incremental snapshots.
 
 PhotosSnapshot creates a filesystem-based backup for Photos assets including audio, photos, videos, and live photos. The original, modified, and alternate (i.e. RAW) versions of all assets, if available, are copied to the destination folder. Assets are represented as folders and named according to the identifier used by PhotoKit[^1]. Resources are grouped into asset folders and named by type.
 
-[^1]: Which matches the asset UUID from the Photos Library SQLite DB
+[^1]: Which matches the asset UUID from the Photos Library SQLite DB, if you want to query against it for other metadata
 
 I wrote this tool to allow me to backup my iCloud-stored photos without using all the local storage required for "Download Originals to this Mac".
 
-I hope to extend this tool to support lightweight incremental snapshots, using APFS COW clones and/or hardlinks to provide a time-series of complete snapshots without unncessarily duplicating the underlying data, much like Time Machine.
-
-This project is not based on but was inspired by [PhotosExporter](https://github.com/abentele/PhotosExporter) by Andreas Bentele. Their tool makes similar lightweight clones - probably better ones - but can only backup local assets. That workflow doesn't suit my needs but their project did convince me I could write a Swift PhotoKit app, which was very helpful.
+This project is not based on but was inspired by [PhotosExporter](https://github.com/abentele/PhotosExporter) by Andreas Bentele. Their tool makes similar lightweight snapshots but can only backup local assets. That workflow doesn't suit my needs but their project did convince me I could write a Swift PhotoKit app, which was very helpful.
 
 ## Usage
 
@@ -26,11 +24,37 @@ This will download all assets of all enabled types into a new snapshot at `<pare
 
 --
 
+### Incremental Snapshot
+
+`PhotosSnapshot --clone -b <base> <parent>`
+
+`PhotosSnapshot --clone -b 2023-01-11_12-13-14 /Volumes/BackupDisk/Snapshots`
+
+The value of value of `base` should match the subfolder of an existing snapshot in the same parent folder
+
+This will create a new, thin snapshot by fetching assets that are missing or have been updated since the `<base>` snapshot timestamp (or the `--compare-date` if provided) and cloning[^2] any assets already exist in the `<base>` snapshot
+
+[^2]: Clones are available when fetching to an APFS volume. `--symlink` and `--hardlink` produce similar behaviors on other filesystems. Volume support for the thin-copy mode is checked at runtime
+
+--
+
+### Incremental Partial Snapshot
+
+`PhotosSnapshot --incremental -b <base> <parent>`
+
+`PhotosSnapshot --incremental -b 2023-01-11_12-13-14 /Volumes/BackupDisk/Snapshots`
+
+The value of value of `base` should match the subfolder of an existing snapshot in the same parent folder
+
+This will create a new, sparse snapshot by fetching assets that are missing or have been updated since the `<base>` snapshot timestamp (or the `--compare-date` if provided). Other assets are not cloned and would need to be manually integrated with the `<base>` snapshot to produce a complete snapshot
+
+--
+
 ### Append Snapshot
 
-`PhotosSnapshot -b <base> <parent>`
+`PhotosSnapshot --append -b <base> <parent>`
 
-`PhotosSnapshot -b 2023-01-11_12-13-14 /Volumes/BackupDisk/Snapshots`
+`PhotosSnapshot --append -b 2023-01-11_12-13-14 /Volumes/BackupDisk/Snapshots`
 
 The value of value of `base` should match the subfolder of an existing snapshot in the same parent folder
 
@@ -67,10 +91,10 @@ parent
 --clone
 : Use APFS clones to resources in `<base>` to create a complete snapshot without re-fetching unchanged resources. Implies `--incremental`
 
---hardlinks
+--hardlink
 : Use hardlinks to resources in `<base>` to create a complete snapshot without re-fetching unchanged resources. Implies `--incremental`
 
---symlinks
+--symlink
 : Use symlinks to resources in `<base>` to create a complete snapshot without re-fetching unchanged resources. Implies `--incremental`
 
 --uuid
