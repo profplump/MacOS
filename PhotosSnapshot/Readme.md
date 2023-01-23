@@ -32,9 +32,9 @@ This will download all assets of all enabled types into a new snapshot at `<pare
 
 The value of value of `base` should match the subfolder of an existing snapshot in the same parent folder
 
-This will create a new, thin snapshot by fetching assets that are missing or have been updated since the `<base>` snapshot timestamp (or the `--compare-date` if provided) and cloning[^2] any assets already exist in the `<base>` snapshot
+This will create a new, thin snapshot by fetching assets that are missing or have been updated since the `<base>` snapshot timestamp (or the `--compare-date` if provided) and cloning[^2] any assets already that exist in the `<base>` snapshot
 
-[^2]: Clones are available when fetching to an APFS volume. `--symlink` and `--hardlink` produce similar behaviors on other filesystems. Volume support for the thin-copy mode is checked at runtime
+[^2]: Clones are available when fetching to an APFS volume. `--symlink` and `--hardlink` produce similar behaviors on other filesystems. Symlinks will also work across volumes, though they are less robust as an archive format
 
 --
 
