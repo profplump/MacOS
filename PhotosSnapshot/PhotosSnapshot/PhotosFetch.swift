@@ -34,13 +34,13 @@ class PhotosFetch {
         }
     }
     
-    func fetchAssets(media: PHFetchResult<PHAsset>, destFolder: URL) -> FetchStats {
+    func fetchAssets(media: PHFetchResult<PHAsset>, destFolder: URL, baseFolder: URL) -> FetchStats {
         for i in 0...media.count-1 {
             let resources = PHAssetResource.assetResources(for: media.object(at: i))
             for resource in findSupportedResources(resources: resources) {
                 dispatchGroup.enter()
                 DispatchQueue.global(qos: .utility).async {
-                    self.readFile(resource: resource, destFolder: destFolder)
+                    self.readFile(resource: resource, destFolder: destFolder, baseFolder: baseFolder)
                 }
             }
         }
@@ -49,13 +49,15 @@ class PhotosFetch {
         return fetchStats
     }
     
-    func readFile(resource: PHAssetResource, destFolder: URL) {
+    func readFile(resource: PHAssetResource, destFolder: URL, baseFolder: URL) {
         let filename = ResourceUtils.path(resource: resource)
-        if (options.verbose) {
-            print("Fetching: \(filename)")
-        }
         let dest = URL(fileURLWithPath: filename, relativeTo: destFolder)
+        let target =  URL(fileURLWithPath: filename, relativeTo: baseFolder)
+        var targetValid: Bool = false
+
+        // Ensure we have an asset folder
         do {
+            // Is it cheaper to check for this path to exist first?
             try FileManager.default.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
         } catch {
             // TODO: stderr
@@ -65,6 +67,14 @@ class PhotosFetch {
             return
         }
         
+        // If we are incremental, check for a valid target in baseFolder
+        if (options.incremental) {
+            if (FileManager.default.fileExists(atPath: target.path)) {
+                // TODO: Check that we have the right version of this file
+                targetValid = true
+            }
+        }
+        
         // Do not overwrite
         if (FileManager.default.fileExists(atPath: dest.path)) {
             fetchStats.record(resource: resource, success: !options.warnExists)
@@ -72,10 +82,57 @@ class PhotosFetch {
             return
         }
         
-        // Fake it for dry runs
+        // Empty files for dry runs
         if (options.dryRun) {
             FileManager.default.createFile(atPath: dest.path, contents: nil)
             fetchStats.record(resource: resource, success: true)
+            dispatchGroup.leave()
+            return
+        }
+        
+        // Handle all the thin-copy options, if we have a valid target
+        if (options.clone || options.hardlink || options.symlink && targetValid) {
+            print("Base URL: \(baseFolder)")
+            print("Dest URL: \(dest)")
+            print("Target URL: \(target)")
+
+            // TODO: Check for filesystem support
+            var verb = String()
+            if (options.clone) {
+                verb = "Clon"
+                do {
+                    try FileManager.default.copyItem(at: dest, to: target)
+                    fetchStats.record(resource: resource, success: true)
+                } catch {
+                     // TODO: stderr
+                     print("Unable to create hardlink at \(dest): \(error)")
+                     fetchStats.record(resource: resource, success: false)
+                 }
+            } else if (options.hardlink) {
+                verb = "Hardlink"
+                do {
+                    try FileManager.default.linkItem(at: dest, to: target)
+                    fetchStats.record(resource: resource, success: true)
+                } catch {
+                     // TODO: stderr
+                     print("Unable to create hardlink at \(dest): \(error)")
+                     fetchStats.record(resource: resource, success: false)
+                 }
+            } else if (options.symlink) {
+                verb = "Symlink"
+                do {
+                    try FileManager.default.createSymbolicLink(at: dest, withDestinationURL: target)
+                    fetchStats.record(resource: resource, success: true)
+                } catch {
+                     // TODO: stderr
+                     print("Unable to create symlink at \(dest): \(error)")
+                     fetchStats.record(resource: resource, success: false)
+                 }
+            }
+            
+            if (options.verbose) {
+                print("\(verb.localizedCapitalized)ing: \(filename)")
+            }
             dispatchGroup.leave()
             return
         }
@@ -84,6 +141,9 @@ class PhotosFetch {
         resourceManager.writeData(for: resource, toFile: dest, options: fetchOptions) { (error) in
             self.fetchStats.record(resource: resource, success: (error == nil))
             self.dispatchGroup.leave()
+        }
+        if (options.verbose) {
+            print("Fetching: \(filename)")
         }
     }
     

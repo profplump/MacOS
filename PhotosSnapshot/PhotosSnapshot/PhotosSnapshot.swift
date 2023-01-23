@@ -16,6 +16,7 @@ class PhotosSnapshot {
     let list: PhotosList
     var oldestDate: Date?
     var parentFolder: URL
+    var baseFolder: URL
     var assetSets: [PHFetchResult<PHAsset>]
     
     init(cmdLineArgs: CmdLineArgs) {
@@ -24,6 +25,7 @@ class PhotosSnapshot {
         list = PhotosList(cmdLineArgs: options)
         parentFolder = URL(fileURLWithPath: options.parent)
         parentFolder.standardize()
+        baseFolder = URL(fileURLWithPath: "")
         assetSets = []
         oldestDate = nil
     }
@@ -75,7 +77,7 @@ class PhotosSnapshot {
             if (options.verbose) {
                 print("Fetching \(assets.count) assets")
             }
-            let fetchStats = fetch.fetchAssets(media: assets, destFolder: destFolder)
+            let fetchStats = fetch.fetchAssets(media: assets, destFolder: destFolder, baseFolder: baseFolder)
             if (options.verbose) {
                 print("Resources: \(fetchStats.resourceSuccess.count)/\(fetchStats.resourceError.count) success/fail")
             }
@@ -111,18 +113,14 @@ class PhotosSnapshot {
         }
         
         // Validate the base folder, if provided
-        var baseURL: URL
         if (options.base != nil) {
-            baseURL = URL(fileURLWithPath: options.base!, relativeTo: parentFolder)
+            baseFolder = URL(fileURLWithPath: options.base!, relativeTo: parentFolder)
             var isDir: ObjCBool = true
-            if (!FileManager.default.fileExists(atPath: baseURL.path, isDirectory: &isDir)) {
+            if (!FileManager.default.fileExists(atPath: baseFolder.path, isDirectory: &isDir)) {
                 // TODO: stderr
-                print("Base folder does not exist: \(baseURL)")
+                print("Base folder does not exist: \(baseFolder)")
                 exit(-1)
             }
-        } else {
-            // This isn't used but it saves a lot of ! and ?
-            baseURL = URL(fileURLWithPath: "")
         }
         
         // Parse a modification date from the base folder date
@@ -133,11 +131,11 @@ class PhotosSnapshot {
                     print("Compare Date: \(options.compareDate!)")
                 }
             } else {
-                oldestDate = dateFormatter.date(from: baseURL.lastPathComponent)
+                oldestDate = dateFormatter.date(from: baseFolder.lastPathComponent)
             }
             if (oldestDate == nil) {
                 // TODO: stderr
-                print("Unable to parse subfolder datetime: \(baseURL.lastPathComponent)")
+                print("Unable to parse subfolder datetime: \(baseFolder.lastPathComponent)")
                 exit(-1)
             }
             if (options.verbose) {
@@ -155,7 +153,7 @@ class PhotosSnapshot {
         
         // Unless we are appending, target a new destination
         if (options.append) {
-            subFolder = baseURL.lastPathComponent
+            subFolder = baseFolder.lastPathComponent
         } else {
             subFolder = dateFormatter.string(from: Date())
         }
