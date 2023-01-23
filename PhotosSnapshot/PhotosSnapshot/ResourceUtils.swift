@@ -61,7 +61,7 @@ class ResourceUtils {
             type = "Unknown - " + String(resource.type.rawValue)
         }
         
-        // Path substring: UUID/Photo.jpg
+        // Path substring: UUID_000DESTRUCT0/Photo.jpg
         return UUID + "/" + type + "." + ext
     }
 }

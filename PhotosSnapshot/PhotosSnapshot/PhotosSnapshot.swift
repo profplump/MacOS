@@ -23,6 +23,7 @@ class PhotosSnapshot {
         access = PhotosAccess()
         list = PhotosList(cmdLineArgs: options)
         parentFolder = URL(fileURLWithPath: options.parent)
+        parentFolder.standardize()
         assetSets = []
         oldestDate = nil
     }
@@ -121,7 +122,7 @@ class PhotosSnapshot {
             }
         } else {
             // This isn't used but it saves a lot of ! and ?
-            baseURL = parentFolder
+            baseURL = URL(fileURLWithPath: "")
         }
         
         // Parse a modification date from the base folder date
@@ -158,7 +159,11 @@ class PhotosSnapshot {
         } else {
             subFolder = dateFormatter.string(from: Date())
         }
-        return URL(fileURLWithPath: (parentFolder.path + "/" + subFolder + "/"))
+
+        // Build the URL
+        var destURL = parentFolder
+        destURL.append(component: subFolder + "/")
+        return destURL
     }
     
     func buildMediaTypes() -> [ PHAssetMediaType: Bool ]  {
