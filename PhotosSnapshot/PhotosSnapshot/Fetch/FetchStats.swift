@@ -31,7 +31,6 @@ class FetchStats {
         } else {
             self.resourceError.insert(path)
             self.assetError.insert(uuid)
-            // TODO: stderr
             print("Resource fetch error: \(path)")
         }
         fetchStatsSemaphore.signal()

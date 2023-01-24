@@ -113,7 +113,6 @@ class PhotosFetch {
                 }
                 fetchStats.record(resource: resource, success: true)
             } catch {
-                // TODO: stderr
                 print("Unable to create thin copy at \(dest.path)")
                 fetchStats.record(resource: resource, success: false)
             }
@@ -138,7 +137,6 @@ class PhotosFetch {
         do {
             try createAssetFolder(dest: dest)
         } catch {
-            // TODO: stderr
             print("Unable to create asset folder: \(dest.path)")
             dispatchGroup.leave()
             return
@@ -196,14 +194,12 @@ class PhotosFetch {
             } else {
                 // Videos are allowed a modifed still with no original still
                 if (resources.first?.type != .video && modified.count > 0 && modified.first?.type == PHAssetResourceType.fullSizePhoto) {
-                    // TODO: stderr
                     print("No original resource: \(ResourceUtils.uuid(id: id))")
                 }
             }
             if (modified.count > 0) {
                 valid.append(modified.first!)
                 if (modified.count > 1) {
-                    // TODO: stderr
                     print("Invalid modified resources: \(ResourceUtils.uuid(id: id))")
                 }
             }

@@ -91,7 +91,6 @@ struct CmdLineArgs: ParsableCommand {
         mediaTypes = mediaTypes.uppercased()
         var isDir: ObjCBool = true
         if (!FileManager.default.fileExists(atPath: parent, isDirectory: &isDir)) {
-            // TODO: stderr
             print("Invalid parent folder: \(parent)")
             return
         }
@@ -105,23 +104,19 @@ struct CmdLineArgs: ParsableCommand {
         }
         if (!uuid.isEmpty) {
             if (mediaTypes != default_mediaTypes) {
-                // TODO: stderr
                 print("UUID-based fetches ignores media-types")
                 mediaTypes = default_mediaTypes
             }
             if (incremental) {
-                // TODO: stderr
                 print("UUID-based fetches does not support incremental operations")
                 return
             }
         }
         if (append && incremental) {
-            // TODO: stderr
             print("Append and incremental operations are mutually exclusive")
             return
         }
         if ((append || incremental) && base == nil) {
-            // TODO: stderr
             print("Append and incremental operations require a -b <base> folder")
             return
         }

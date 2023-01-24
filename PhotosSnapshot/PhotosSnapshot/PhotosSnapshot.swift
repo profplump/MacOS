@@ -78,7 +78,6 @@ class PhotosSnapshot {
             }
         }
         if (assetSets.count < 1) {
-            // TODO: stderr
             print("Found 0 media assets")
             exit(-4)
         }
@@ -130,7 +129,6 @@ class PhotosSnapshot {
             fetchPaths.baseFolder = URL(fileURLWithPath: options.base!, relativeTo: fetchPaths.parentFolder)
             var isDir: ObjCBool = true
             if (!FileManager.default.fileExists(atPath: fetchPaths.baseFolder.path, isDirectory: &isDir)) {
-                // TODO: stderr
                 print("Base folder does not exist: \(fetchPaths.baseFolder.path)")
                 exit(-1)
             }
@@ -150,7 +148,6 @@ class PhotosSnapshot {
             }
             fetchPaths.compareDate = dateFormatter.date(from: compareString)
             if (fetchPaths.compareDate == nil) {
-                // TODO: stderr
                 print("Unable to parse compare date: \(compareString)")
                 exit(-1)
             }
