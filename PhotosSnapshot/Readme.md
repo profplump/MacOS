@@ -14,12 +14,10 @@ This project is not based on but was inspired by [PhotosExporter](https://github
 
 ### Typical Workflow
 
-A typical workflow might look like this:
 1. Manually create a single snapshot: `PhotosSnapshot /Volumes/BackupDisk/Snapshots`
 1. Create a periodic (e.g. daily) incremental snapshot with: `PhotosSnapshot --clone -b LATEST /Volumes/BackupDisk/Snapshots`
 1. Run a period (e.g. monthly) verification, to ensure that the complete snapshot is intact: `PhotosSnapshot --verify -b LATEST /Volumes/BackupDisk/Snapshots`
-1. Manually remove any resources that `verify` complains about and replace them by appending assets with: `PhotosSnapshot --append -b LASTEST /Volumes/BackupDisk/Snapshots`, or use the `--uuid` option to specify the specific assets you want to re-fetch
-
+1. Manually remove any resources that `verify` complains about and replace them by appending assets with: `PhotosSnapshot --append -b LASTEST /Volumes/BackupDisk/Snapshots`, optionally using `--uuid` to specify the specific assets you want to re-fetch
 
 ### Create Snapshot
 
@@ -49,7 +47,7 @@ This will create a new snapshot based on the most recent existing snapshot, by f
 
 `PhotosSnapshot --incremental -b 2023-01-11_12-13-14 /Volumes/BackupDisk/Snapshots`
 
-This will create a new, sparse snapshot by fetching assets that are missing or have been updated since the `<base>` snapshot timestamp (or the `--compare-date` if provided). Other assets are not cloned and would need to be manually integrated with the `<base>` snapshot to produce a complete snapshot
+This will create a new, sparse snapshot by fetching assets that are missing or have been updated since the `<base>` snapshot timestamp (or `--compare-date`). Other assets are not fetched in a sparse snapshot, and would need to be manually integrated from `<base>` to produce a complete snapshot.
 
 --
 
