@@ -6,7 +6,7 @@ PhotosSnapshot creates a filesystem-based backup for Photos assets including aud
 
 [^1]: Which matches the asset UUID from the Photos Library SQLite DB, if you want to query against it for other metadata
 
-I wrote this tool to allow me to backup iCloud-stored photos without using the local storage required for "Download Originals to this Mac".
+I wrote this tool to allow backups of iCloud-stored photos without using the local storage required for "Download Originals to this Mac".
 
 This project is not based on but was inspired by [PhotosExporter](https://github.com/abentele/PhotosExporter) by Andreas Bentele. Their tool makes similar lightweight snapshots but can only backup local assets. That workflow doesn't suit my needs but their project did convince me I could write a Swift PhotoKit app, which was very helpful.
 
