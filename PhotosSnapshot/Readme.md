@@ -110,7 +110,7 @@ parent
 : Use symlinks to resources in `<base>` to create a complete snapshot without re-fetching unchanged resources. Implies `--incremental`
 
 --uuid
-: One or more UUIDs to fetch. This option does not support the media-types filter. This option must appear last -- any futher arguments are treated as UUIDs.
+: One or more UUIDs to fetch. This option does not support the media-types filter. This option must appear last as any futher arguments are treated as UUIDs
 
 `-u 5DF52E20-7411-4748-98C9-211422F97563 431C6A1C-1BC3-4450-B6C8-76CEA3972542`
 
