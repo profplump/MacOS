@@ -32,7 +32,7 @@ struct CmdLineArgs: ParsableCommand {
     @Flag(name: .long, help: "Use symlinks to resources in `<base>` to create a complete snapshot without re-fetching unchanged resources. Implies --incremental")
     var symlink: Bool = false
 
-    @Option(name: .shortAndLong, parsing: .remaining, help: "One or more UUIDs to fetch. This option does not support the media-types filter or incremental operation")
+    @Option(name: .shortAndLong, parsing: .remaining, help: "One or more UUIDs to fetch. This option does not support the media-types filter. This option must appear last -- any remaining arguments are treated as UUIDs")
     var uuid: [String] = []
     
     @Option(name: .shortAndLong, help: "Filter media types by included or excluding them in this string. Use A for audio, P for photos and V for video. Default: APV")

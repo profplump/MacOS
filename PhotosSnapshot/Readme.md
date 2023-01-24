@@ -88,7 +88,7 @@ parent
 `/Volumes/BackupDisk/Snapshots`
 
 --base
-: An existing snapshot path, relative to `<parent>`. Required for append or incremental operations. Use the keyword `RECENT` to select the most recent snapshot in `<parent>`
+: An existing snapshot path, relative to `<parent>`. Required for append, incremental, and verify operations. Use the keyword `RECENT` to select the most recent snapshot in `<parent>`
 
 `-b 2023-01-11_12-13-14`
 
@@ -110,7 +110,7 @@ parent
 : Use symlinks to resources in `<base>` to create a complete snapshot without re-fetching unchanged resources. Implies `--incremental`
 
 --uuid
-: One or more UUIDs to fetch. This option does not support the media-types filter or incremental operation
+: One or more UUIDs to fetch. This option does not support the media-types filter. This option must appear last -- any futher arguments are treated as UUIDs.
 
 `-u 5DF52E20-7411-4748-98C9-211422F97563 431C6A1C-1BC3-4450-B6C8-76CEA3972542`
 
