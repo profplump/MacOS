@@ -17,7 +17,7 @@ struct CmdLineArgs: ParsableCommand {
     @Argument(help: "Destination parent folder. Snapshots are created in folders under this path")
     var parent: String
     
-    @Option(name: .shortAndLong, help: "An existing snapshot path, relative to <parent>. Required for append or incremental operations")
+    @Option(name: .shortAndLong, help: "An existing snapshot path, relative to <parent>. Required for append, incremental, and verify operations. Use the keyword RECENT to select the most recent snapshot in <parent>")
     var base: String?
     
     @Flag(name: .long, help: "Append the existing snapshot at <base>")
@@ -59,9 +59,8 @@ struct CmdLineArgs: ParsableCommand {
     @Flag(name: .long, help: "Do not fetch resource content, just create empty files")
     var dryRun: Bool = false
     
-    @Flag(name: .long, help: "Verify the content of an existing snapshot at <base>. Ignores assets newer than the snapshot timestamp (or the --compare-date if provided)")
+    @Flag(name: .long, help: "Verify the content of an existing snapshot at <base>. Ignores assets newer than the snapshot timestamp (or --compare-date)")
     var verify: Bool = false
-
         
     @Flag(name: .shortAndLong, help: "Print additional runtime information")
     var verbose: Bool = false
@@ -118,10 +117,6 @@ struct CmdLineArgs: ParsableCommand {
             if (mediaTypes != default_mediaTypes) {
                 print("UUID-based fetches ignores media-types")
                 mediaTypes = default_mediaTypes
-            }
-            if (incremental) {
-                print("UUID-based fetches does not support incremental operations")
-                return
             }
         }
 

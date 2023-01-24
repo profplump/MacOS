@@ -12,7 +12,14 @@ This project is not based on but was inspired by [PhotosExporter](https://github
 
 ## Usage
 
-PhotosSnapshot will prompt for full access to your Photos the first time it is run. If you select a destination folder with special access restrictions (e.g. Desktop or Documents) it will also prompt to access that location.
+### Typical Workflow
+
+A typical workflow might look like this:
+1. Manually create a single snapshot: `PhotosSnapshot /Volumes/BackupDisk/Snapshots`
+1. Create a periodic (e.g. daily) incremental snapshot with: `PhotosSnapshot --clone -b LATEST /Volumes/BackupDisk/Snapshots`
+1. Run a period (e.g. monthly) verification, to ensure that the complete snapshot is intact: `PhotosSnapshot --verify -b LATEST /Volumes/BackupDisk/Snapshots`
+1. Manually remove any resources that `verify` complains about and replace them by appending assets with: `PhotosSnapshot --append -b LASTEST /Volumes/BackupDisk/Snapshots`, or use the `--uuid` option to specify the specific assets you want to re-fetch
+
 
 ### Create Snapshot
 
@@ -28,11 +35,9 @@ This will download all assets of all enabled types into a new snapshot at `<pare
 
 `PhotosSnapshot --clone -b <base> <parent>`
 
-`PhotosSnapshot --clone -b 2023-01-11_12-13-14 /Volumes/BackupDisk/Snapshots`
+`PhotosSnapshot --clone -b RECENT /Volumes/BackupDisk/Snapshots`
 
-The value of value of `base` should match the subfolder of an existing snapshot in the same parent folder
-
-This will create a new, thin snapshot by fetching assets that are missing or have been updated since the `<base>` snapshot timestamp (or the `--compare-date` if provided) and cloning[^2] any assets already that exist in the `<base>` snapshot
+This will create a new snapshot based on the most recent existing snapshot, by fetching assets that are missing from or have been updated since the `<base>` snapshot timestamp (or `--compare-date`) and cloning[^2] any assets already that exist in the `<base>` snapshot
 
 [^2]: Clones are available when fetching to an APFS volume. `--symlink` and `--hardlink` produce similar behaviors on other filesystems. Symlinks will also work across volumes, though they are less robust as an archive format
 
@@ -44,8 +49,6 @@ This will create a new, thin snapshot by fetching assets that are missing or hav
 
 `PhotosSnapshot --incremental -b 2023-01-11_12-13-14 /Volumes/BackupDisk/Snapshots`
 
-The value of value of `base` should match the subfolder of an existing snapshot in the same parent folder
-
 This will create a new, sparse snapshot by fetching assets that are missing or have been updated since the `<base>` snapshot timestamp (or the `--compare-date` if provided). Other assets are not cloned and would need to be manually integrated with the `<base>` snapshot to produce a complete snapshot
 
 --
@@ -56,9 +59,17 @@ This will create a new, sparse snapshot by fetching assets that are missing or h
 
 `PhotosSnapshot --append -b 2023-01-11_12-13-14 /Volumes/BackupDisk/Snapshots`
 
-The value of value of `base` should match the subfolder of an existing snapshot in the same parent folder
-
 This will reprocess the existing snapshot by adding new assets and retrying any missing resources. It will not modify (nor verify) any existing files.
+
+--
+
+### Verify Snapshot
+
+`PhotosSnapshot --verify -b <base> <parent>`
+
+`PhotosSnapshot --verify -b 2023-01-11_12-13-14 /Volumes/BackupDisk/Snapshots`
+
+This will verify every resource in `<base>` by downloading a new copy and doing a byte comparision of the existing file. Disk usage is minimal as resources are fetch, verified, and immediately deleted. Errors will be reported if assets do not exist, are not readable, or do not exactly match the current version. Assets with creation or modification times after the snapshot timestamp (or `--compare-date`) are ignored.
 
 --
 
@@ -68,7 +79,8 @@ This will reprocess the existing snapshot by adding new assets and retrying any 
 
 `PhotosSnapshot /Volumes/BackupDisk/Snapshots --uuid 5DF52E20-7411-4748-98C9-211422F97563 431C6A1C-1BC3-4450-B6C8-76CEA3972542`
 
-Where the value of the second and any subsequent arguements are UUIDs as expected by PhotoKit. When used in this mode MEDIA_TYPES are ignored and assets of any supported type will be fetched.
+Any arguments after the flag `--uuid` are UUIDs as expected by PhotoKit. When used in this mode MEDIA_TYPES are ignored and assets of any supported type will be fetched. Maybe be combined with other operation modes to append, incremental, or verify specific assets in an existing archive.
+
 
 ## Arguments, Options, and Flags
 
@@ -78,9 +90,11 @@ parent
 `/Volumes/BackupDisk/Snapshots`
 
 --base
-: An existing snapshot, relative to `<parent>`. Required for append or incremental operations
+: An existing snapshot path, relative to `<parent>`. Required for append or incremental operations. Use the keyword `RECENT` to select the most recent snapshot in `<parent>`
 
 `-b 2023-01-11_12-13-14`
+
+`-b RECENT`
 
 --append
 : Append the existing snapshot at `<base>`
@@ -135,7 +149,7 @@ parent
 : Do not copy resource content, just create empty files
 
 --verify
-: Verify the content of an existing snapshot at `<base>`. Ignores assets newer than the snapshot timestamp (or the `--compare-date` if provided)
+: Verify the content of an existing snapshot at `<base>`. Ignores assets newer than the snapshot timestamp (or `--compare-date`)
 
 --verbose
 : Enable additional runtime output

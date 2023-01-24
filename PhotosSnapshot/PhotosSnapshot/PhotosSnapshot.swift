@@ -68,7 +68,8 @@ class PhotosSnapshot {
             return
         }
         
-        // Parse the compare date, if any
+        // Parse the baseFolder and compareDate
+        validateBaseURL()
         let compareDate = parseCompareDate()
         
         // Figure out what assets we are fetching
@@ -140,9 +141,14 @@ class PhotosSnapshot {
         return compareDate
     }
     
-    func buildDestURL() {
-        // Validate the base folder, if provided
-        if (options.base != nil) {
+    func validateBaseURL() {
+        if (options.base == nil) {
+            return
+        }
+        if (options.base == "RECENT") {
+            print("Base folder 'RECENT' is not supported. Yet.")
+            exit(-5)
+        } else {
             fetchPaths.baseFolder = URL(fileURLWithPath: options.base!, relativeTo: fetchPaths.parentFolder)
             var isDir: ObjCBool = true
             if (!FileManager.default.fileExists(atPath: fetchPaths.baseFolder.path, isDirectory: &isDir)) {
@@ -153,8 +159,10 @@ class PhotosSnapshot {
                 print("Base Folder: \(fetchPaths.baseFolder.path)")
             }
         }
-        
-        // Unless we are appending, target a new destination
+    }
+    
+    func buildDestURL() {
+        // Only append re-uses a snapshot destination
         var subFolder = String();
         if (options.append) {
             subFolder = fetchPaths.baseFolder.lastPathComponent
@@ -162,7 +170,7 @@ class PhotosSnapshot {
             subFolder = dateFormatter.string(from: Date())
         }
 
-        // Build the destination URL, using a temp path if we are verifying
+        // Use a temp path if we are verifying
         if (options.verify) {
             fetchPaths.destFolder = FileManager.default.temporaryDirectory.appendingPathComponent("PhotosSnapshot/" + subFolder, isDirectory: true)
         } else {
