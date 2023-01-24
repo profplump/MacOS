@@ -77,7 +77,7 @@ This will verify every resource in `<base>` by downloading a new copy and doing 
 
 `PhotosSnapshot /Volumes/BackupDisk/Snapshots --uuid 5DF52E20-7411-4748-98C9-211422F97563 431C6A1C-1BC3-4450-B6C8-76CEA3972542`
 
-Any arguments after the flag `--uuid` are treated as UUIDs and fed to PhotoKit. When used in this mode `--media-types` are ignored and assets of any supported type will be fetched. Maybe be combined with any operation to fetch, append, incremental, or verify specific assets in an existing archive.
+Any arguments after the flag `--uuid` are treated as UUIDs and fed to PhotoKit. When used in this mode `--media-types` are ignored and assets of any supported type will be fetched. May be combined with any operation to fetch, append, incremental, or verify specific assets.
 
 
 ## Arguments, Options, and Flags
