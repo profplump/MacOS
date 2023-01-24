@@ -35,7 +35,7 @@ This will download all assets of all enabled types into a new snapshot at `<pare
 
 `PhotosSnapshot --clone -b RECENT /Volumes/BackupDisk/Snapshots`
 
-This will create a new snapshot based on the most recent existing snapshot, by fetching assets that are missing from or have been updated since the `<base>` snapshot timestamp (or `--compare-date`) and cloning[^2] any assets already that exist in the `<base>` snapshot
+This will create a new snapshot based on the most recent existing snapshot, by cloning[^2] resources from any valid assets from the `<base>` snapshot, and then by fetching assets that are missing from `<base>` or that have been updated since the `<base>` snapshot timestamp (or `--compare-date`).
 
 [^2]: Clones are available when fetching to an APFS volume. `--symlink` and `--hardlink` produce similar behaviors on other filesystems. Symlinks will also work across volumes, though they are less robust as an archive format
 
@@ -47,7 +47,7 @@ This will create a new snapshot based on the most recent existing snapshot, by f
 
 `PhotosSnapshot --incremental -b 2023-01-11_12-13-14 /Volumes/BackupDisk/Snapshots`
 
-This will create a new, sparse snapshot by fetching assets that are missing from or have been updated since the `<base>` snapshot timestamp (or `--compare-date`). Other assets are not fetched in a sparse snapshot, and would need to be manually integrated from `<base>` to produce a complete snapshot.
+This will create a new, sparse snapshot by fetching assets that are missing from `<base>` or that have been updated since the `<base>` snapshot timestamp (or `--compare-date`). Valid assets that exist in `<base>` are not fetched in a sparse snapshot.
 
 --
 
@@ -57,7 +57,7 @@ This will create a new, sparse snapshot by fetching assets that are missing from
 
 `PhotosSnapshot --append -b 2023-01-11_12-13-14 /Volumes/BackupDisk/Snapshots`
 
-This will reprocess the existing snapshot by adding new assets and retrying any missing resources. It will not modify (nor verify) any existing files.
+This will reprocess an existing snapshot by adding new assets and retrying any missing resources. It will not modify (nor verify) any existing resources.
 
 --
 
@@ -77,7 +77,7 @@ This will verify every resource in `<base>` by downloading a new copy and doing 
 
 `PhotosSnapshot /Volumes/BackupDisk/Snapshots --uuid 5DF52E20-7411-4748-98C9-211422F97563 431C6A1C-1BC3-4450-B6C8-76CEA3972542`
 
-Any arguments after the flag `--uuid` are UUIDs as expected by PhotoKit. When used in this mode MEDIA_TYPES are ignored and assets of any supported type will be fetched. Maybe be combined with other operation modes to append, incremental, or verify specific assets in an existing archive.
+Any arguments after the flag `--uuid` are treated as UUIDs and fed to PhotoKit. When used in this mode `--media-types` are ignored and assets of any supported type will be fetched. Maybe be combined with other operation modes to append, incremental, or verify specific assets in an existing archive.
 
 
 ## Arguments, Options, and Flags
