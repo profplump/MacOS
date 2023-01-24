@@ -120,7 +120,7 @@ parent
 --compare-date
 : A date string, in the format specified in date-format, for use in incremental operations. This overrides folder-based date determinations
 
-`-k 2020-01-01_00-00-00`
+`-c 2020-01-01_00-00-00`
 
 --warn-exists
 : Issue a warning when a resource file already exists. By default existing files are ignored and counted as successful fetches
@@ -133,6 +133,9 @@ parent
 
 --dry-run
 : Do not copy resource content, just create empty files
+
+--verify
+: Verify the content of an existing snapshot at `<base>`. Ignores assets newer than the snapshot timestamp (or the `--compare-date` if provided)
 
 --verbose
 : Enable additional runtime output

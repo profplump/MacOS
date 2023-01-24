@@ -20,16 +20,16 @@ struct CmdLineArgs: ParsableCommand {
     @Option(name: .shortAndLong, help: "An existing snapshot path, relative to <parent>. Required for append or incremental operations")
     var base: String?
     
-    @Flag(name: .shortAndLong, help: "Append the existing snapshot at <base>")
+    @Flag(name: .long, help: "Append the existing snapshot at <base>")
     var append: Bool = false
-    
-    @Flag(name: .shortAndLong, help: "Create a new incremental backup using <base> as a prior snapshot. Fetches only resources that have changed since the timestamp of `<base>` or the provided `--incremental-date`")
+        
+    @Flag(name: .long, help: "Create a new incremental backup using <base> as a prior snapshot. Fetches only resources that have changed since the timestamp of `<base>` or the provided `--incremental-date`")
     var incremental: Bool = false
-    @Flag(name: .shortAndLong, help: "Use APFS clones to resources in `<base>` to create a complete snapshot without re-fetching unchanged resources. Implies --incremental")
+    @Flag(name: .long, help: "Use APFS clones to resources in `<base>` to create a complete snapshot without re-fetching unchanged resources. Implies --incremental")
     var clone: Bool = false
-    @Flag(name: .shortAndLong, help: "Use hardlinks to resources in `<base>` to create a complete snapshot without re-fetching unchanged resources. Implies --incremental")
+    @Flag(name: .long, help: "Use hardlinks to resources in `<base>` to create a complete snapshot without re-fetching unchanged resources. Implies --incremental")
     var hardlink: Bool = false
-    @Flag(name: .shortAndLong, help: "Use symlinks to resources in `<base>` to create a complete snapshot without re-fetching unchanged resources. Implies --incremental")
+    @Flag(name: .long, help: "Use symlinks to resources in `<base>` to create a complete snapshot without re-fetching unchanged resources. Implies --incremental")
     var symlink: Bool = false
 
     @Option(name: .shortAndLong, parsing: .remaining, help: "One or more UUIDs to fetch. This option does not support the media-types filter or incremental operation")
@@ -44,7 +44,7 @@ struct CmdLineArgs: ParsableCommand {
     @Option(name: .shortAndLong, help: "A DateFormatter format string for use in naming snapshot folders. Default: yyyy-MM-dd_hh-mm-ss")
     var dateFormat: String = default_dateFormat
     
-    @Option(name: [.customShort("k"), .long], help: "A date string, in the format specified in date-format, for use in incremental backups. This overrides folder-based date determinations")
+    @Option(name: .shortAndLong, help: "A date string, in the format specified in date-format, for use in incremental backups. This overrides folder-based date determinations")
     var compareDate: String? = nil
 
     @Flag(name: .shortAndLong, help: "Issue a warning when a resource file already exists. By default existing files are ignored and counted as successful fetches")
@@ -56,8 +56,12 @@ struct CmdLineArgs: ParsableCommand {
     @Flag(name: .shortAndLong, help: "Do not include Hidden assets in fetch results")
     var noHidden: Bool = false
     
-    @Flag(name: [.customShort("r"), .long], help: "Do not fetch resource content, just create empty files")
+    @Flag(name: .long, help: "Do not fetch resource content, just create empty files")
     var dryRun: Bool = false
+    
+    @Flag(name: .long, help: "Verify the content of an existing snapshot at <base>. Ignores assets newer than the snapshot timestamp (or the --compare-date if provided)")
+    var verify: Bool = false
+
         
     @Flag(name: .shortAndLong, help: "Print additional runtime information")
     var verbose: Bool = false
@@ -99,8 +103,16 @@ struct CmdLineArgs: ParsableCommand {
         if (clone || symlink || hardlink) {
             incremental = true
         }
-        if (base != nil && (!append && !incremental)) {
+        if (base != nil && (!append && !incremental && !verify)) {
             append = true
+        }
+        if ((verify && incremental) || (verify && append) || (append && incremental)) {
+            print("Append, incremental, and verify operations are mutually exclusive")
+            return
+        }
+        if ((append || incremental || verify) && base == nil) {
+            print("Append, incremental, and verify operations require a -b <base> folder")
+            return
         }
         if (!uuid.isEmpty) {
             if (mediaTypes != default_mediaTypes) {
@@ -112,21 +124,13 @@ struct CmdLineArgs: ParsableCommand {
                 return
             }
         }
-        if (append && incremental) {
-            print("Append and incremental operations are mutually exclusive")
-            return
-        }
-        if ((append || incremental) && base == nil) {
-            print("Append and incremental operations require a -b <base> folder")
-            return
-        }
-        
+
         // Start chatting
         if (verbose) {
             print("Verbose: Enabled")
         }
-               
+        
         // Run it
-        PhotosSnapshot(cmdLineArgs: self).main();
+        PhotosSnapshot(options: self).main();
     }
 }

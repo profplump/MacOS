@@ -10,8 +10,8 @@ import Foundation
 import Photos
 
 class PhotosList {
-    private let fetchOptions: PHFetchOptions
-    private let options: CmdLineArgs
+    let fetchOptions: PHFetchOptions
+    let options: CmdLineArgs
     
     init(cmdLineArgs: CmdLineArgs) {
         options = cmdLineArgs

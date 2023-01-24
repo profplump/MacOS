@@ -10,7 +10,7 @@ import Foundation
 import Photos
 
 class PhotosAccess {
-    private let semaphore: DispatchSemaphore
+    let semaphore: DispatchSemaphore
 
     init() {
         semaphore = DispatchSemaphore(value: 0)

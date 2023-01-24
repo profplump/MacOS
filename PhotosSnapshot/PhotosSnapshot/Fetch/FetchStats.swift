@@ -20,18 +20,14 @@ class FetchStats {
         fetchStatsSemaphore = DispatchSemaphore(value: 1)
     }
     
-    func record(resource: PHAssetResource, success: Bool) {
-        let uuid = ResourceUtils.uuid(id: resource.assetLocalIdentifier)
-        let path = ResourceUtils.path(resource: resource)
-
+    func record(assetResource: AssetResource, success: Bool) {
         fetchStatsSemaphore.wait()
         if (success) {
-            self.resourceSuccess.insert(path)
-            self.assetSuccess.insert(uuid)
+            self.resourceSuccess.insert(assetResource.filename)
+            self.assetSuccess.insert(assetResource.uuid)
         } else {
-            self.resourceError.insert(path)
-            self.assetError.insert(uuid)
-            print("Resource fetch error: \(path)")
+            self.resourceError.insert(assetResource.filename)
+            self.assetError.insert(assetResource.uuid)
         }
         fetchStatsSemaphore.signal()
     }

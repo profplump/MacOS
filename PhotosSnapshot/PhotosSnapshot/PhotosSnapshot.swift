@@ -15,13 +15,15 @@ class PhotosSnapshot {
     let access: PhotosAccess
     let list: PhotosList
     let fetchPaths: FetchPaths
+    let dateFormatter: DateFormatter
     var assetSets: [PHFetchResult<PHAsset>]
     
-    init(cmdLineArgs: CmdLineArgs) {
-        options = cmdLineArgs
+    init(options: CmdLineArgs) {
+        self.options = options
         access = PhotosAccess()
         list = PhotosList(cmdLineArgs: options)
         fetchPaths = FetchPaths(parentFolder: URL(fileURLWithPath: options.parent))
+        dateFormatter = PhotosSnapshot.dateFormatterFactory(options: options)
         assetSets = []
     }
 
@@ -40,6 +42,8 @@ class PhotosSnapshot {
                 operation = "append"
             } else if (options.incremental) {
                 operation = "incremental"
+            } else if (options.verify) {
+                operation = "verify"
             } else {
                 operation = "snapshot"
             }
@@ -64,6 +68,9 @@ class PhotosSnapshot {
             return
         }
         
+        // Parse the compare date, if any
+        let compareDate = parseCompareDate()
+        
         // Figure out what assets we are fetching
         let mediaTypes = buildMediaTypes()
         if (!options.uuid.isEmpty) {
@@ -84,12 +91,12 @@ class PhotosSnapshot {
         
         // Fetch to filesystem
         var exitError: Int32 = 0
-        let fetch = PhotosFetch(cmdLineArgs: options)
+        let fetch = PhotosFetch(cmdLineArgs: options, fetchPaths: fetchPaths, compareDate: compareDate)
         for assets in assetSets {
             if (options.verbose) {
                 print("Fetching \(assets.count) assets")
             }
-            let fetchStats = fetch.fetchAssets(media: assets, fetchPaths: fetchPaths)
+            let fetchStats = fetch.fetchAssets(media: assets)
             if (options.verbose) {
                 print("Resources: \(fetchStats.resourceSuccess.count)/\(fetchStats.resourceError.count) success/failure")
             }
@@ -107,23 +114,33 @@ class PhotosSnapshot {
         exit(exitError)
     }
     
-    func appendAssets(assets: PHFetchResult<PHAsset>) {
-        if (assets.count > 0) {
-            assetSets.append(assets)
+    func parseCompareDate() -> Date? {
+        var compareDate: Date? = nil
+        // Parse a modification date from the base folder date
+        if (options.incremental || options.verify) {
+            var compareString: String
+            if (options.compareDate != nil) {
+                compareString = options.compareDate!
+                if (options.verbose) {
+                    print("Compare String: \(compareString)")
+                }
+            } else {
+                compareString = fetchPaths.baseFolder.lastPathComponent
+            }
+            compareDate = dateFormatter.date(from: compareString)
+            if (compareDate == nil) {
+                print("Unable to parse compare date: \(compareString)")
+                exit(-1)
+            }
+            if (options.verbose) {
+                print("Compare Date: \(compareDate!)")
+            }
         }
+        
+        return compareDate
     }
     
     func buildDestURL() {
-        var subFolder = String();
-        
-        // Setup to print and parse dates
-        let dateFormatter = DateFormatter()
-        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
-        dateFormatter.dateFormat = options.dateFormat
-        if (options.verbose) {
-            print("Date Format: \(dateFormatter.dateFormat!)")
-        }
-        
         // Validate the base folder, if provided
         if (options.base != nil) {
             fetchPaths.baseFolder = URL(fileURLWithPath: options.base!, relativeTo: fetchPaths.parentFolder)
@@ -137,36 +154,20 @@ class PhotosSnapshot {
             }
         }
         
-        // Parse a modification date from the base folder date
-        if (options.incremental) {
-            var compareString: String
-            if (options.compareDate != nil) {
-                compareString = options.compareDate!
-                print("Compare Date: \(options.compareDate!)")
-            } else {
-                compareString = fetchPaths.baseFolder.lastPathComponent
-            }
-            fetchPaths.compareDate = dateFormatter.date(from: compareString)
-            if (fetchPaths.compareDate == nil) {
-                print("Unable to parse compare date: \(compareString)")
-                exit(-1)
-            }
-            if (options.verbose) {
-                print("Incremental Date: \(fetchPaths.compareDate!)")
-            }
-        }
-        
         // Unless we are appending, target a new destination
+        var subFolder = String();
         if (options.append) {
             subFolder = fetchPaths.baseFolder.lastPathComponent
         } else {
             subFolder = dateFormatter.string(from: Date())
         }
 
-        // Build the URL
-        var destURL = fetchPaths.parentFolder
-        destURL.append(component: subFolder + "/")
-        fetchPaths.destFolder = destURL
+        // Build the destination URL, using a temp path if we are verifying
+        if (options.verify) {
+            fetchPaths.destFolder = FileManager.default.temporaryDirectory.appendingPathComponent("PhotosSnapshot/" + subFolder, isDirectory: true)
+        } else {
+            fetchPaths.destFolder = fetchPaths.parentFolder.appendingPathComponent(subFolder, isDirectory: true)
+        }
     }
     
     func buildMediaTypes() -> [ PHAssetMediaType: Bool ]  {
@@ -206,6 +207,22 @@ class PhotosSnapshot {
         appendAssets(assets: assets)
         if (options.verbose) {
             print("Found \(assets.count) UUID assets")
+        }
+    }
+    
+    fileprivate static func dateFormatterFactory(options: CmdLineArgs) -> DateFormatter {
+        let df = DateFormatter()
+        df.locale = Locale(identifier: "en_US_POSIX")
+        df.dateFormat = options.dateFormat
+        if (options.verbose) {
+            print("Date Format: \(df.dateFormat!)")
+        }
+        return df
+    }
+    
+    fileprivate func appendAssets(assets: PHFetchResult<PHAsset>) {
+        if (assets.count > 0) {
+            assetSets.append(assets)
         }
     }
 }

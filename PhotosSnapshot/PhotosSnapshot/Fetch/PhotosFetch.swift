@@ -10,18 +10,22 @@ import Foundation
 import Photos
 
 class PhotosFetch {
+    let options: CmdLineArgs
+    let fetchPaths: FetchPaths
     let fetchStats: FetchStats
+    let compareDate: Date?
+    let dispatchGroup: DispatchGroup
     let resourceManager: PHAssetResourceManager
     let fetchOptions: PHAssetResourceRequestOptions
-    let dispatchGroup: DispatchGroup
-    let options: CmdLineArgs
-    
-    init(cmdLineArgs: CmdLineArgs) {
+
+    init(cmdLineArgs: CmdLineArgs, fetchPaths: FetchPaths, compareDate: Date? = nil) {
         options = cmdLineArgs
+        self.fetchPaths = fetchPaths
         fetchStats = FetchStats()
-        resourceManager = PHAssetResourceManager()
+        self.compareDate = compareDate
         dispatchGroup = DispatchGroup()
-        
+        resourceManager = PHAssetResourceManager()
+
         fetchOptions = PHAssetResourceRequestOptions()
         fetchOptions.isNetworkAccessAllowed = !options.localOnly
         if (options.verbose) {
@@ -34,46 +38,55 @@ class PhotosFetch {
         }
     }
     
-    func fetchAssets(media: PHFetchResult<PHAsset>, fetchPaths: FetchPaths) -> FetchStats {
+    func fetchAssets(media: PHFetchResult<PHAsset>) -> FetchStats {
         for i in 0...media.count-1 {
             let asset = media.object(at: i)
             let resources = PHAssetResource.assetResources(for: asset)
             for resource in findSupportedResources(resources: resources) {
+                let assetResource = AssetResource(asset: asset, resource: resource, compareDate: compareDate)
+
                 // Determine if base contains a plausibly valid copy of this resource
                 var baseAssetValid = false
                 if (options.incremental) {
-                    var invalid = false
-                    let target = URL(fileURLWithPath: ResourceUtils.path(resource: resource), relativeTo: fetchPaths.baseFolder)
-                    // Exists
-                    if (!FileManager.default.fileExists(atPath: target.path)) {
-                        invalid = true
+                    let target = fetchPaths.resourceTarget(assetResource: assetResource)
+                    if (FileManager.default.fileExists(atPath: target.path) && !assetResource.outdated()) {
+                        baseAssetValid = true
                     }
-                    // Is recent enough
-                    if (max(asset.creationDate ?? Date.distantFuture, asset.modificationDate ?? Date.distantFuture) >= fetchPaths.compareDate ??  Date.now) {
-                        invalid = true
-                    }
-                    baseAssetValid = !invalid
                 }
                     
                 dispatchGroup.enter()
                 DispatchQueue.global(qos: .utility).async {
-                    self.readFile(resource: resource, fetchPaths: fetchPaths, baseRefValid: baseAssetValid)
+                    self.readFile(assetResource: assetResource, baseRefValid: baseAssetValid)
                 }
             }
         }
+        
         // Wait for all the readFile() calls
         dispatchGroup.wait()
+        
+        // Clean up our verify temp directory
+        if (options.verify) {
+            do {
+                try FileManager.default.removeItem(at: fetchPaths.destFolder)
+            } catch {
+                print("Unable to remove verify folder: \(fetchPaths.destFolder.path)")
+            }
+        }
+        
+        // Let our overlords judge our performance
         return fetchStats
     }
     
-    func readFile(resource: PHAssetResource, fetchPaths: FetchPaths, baseRefValid: Bool) {
-        let filename = ResourceUtils.path(resource: resource)
-        let dest = URL(fileURLWithPath: filename, relativeTo: fetchPaths.destFolder)
-        let target = URL(fileURLWithPath: filename, relativeTo: fetchPaths.baseFolder)
+    func readFile(assetResource: AssetResource, baseRefValid: Bool) {
+        let dest = fetchPaths.resourceDest(assetResource: assetResource)
+        let target = fetchPaths.resourceTarget(assetResource: assetResource)
 
-        // Do not overwrite
+        // Skip existing files, one way or another
         if (FileManager.default.fileExists(atPath: dest.path)) {
-            fetchStats.record(resource: resource, success: !options.warnExists)
+            if (options.verbose) {
+                print("Exists: \(assetResource.filename)")
+            }
+            fetchStats.record(assetResource: assetResource, success: !options.warnExists)
             dispatchGroup.leave()
             return
         }
@@ -83,13 +96,13 @@ class PhotosFetch {
             do {
                 try createAssetFolder(dest: dest)
                 FileManager.default.createFile(atPath: dest.path, contents: nil)
-                fetchStats.record(resource: resource, success: true)
+                fetchStats.record(assetResource: assetResource, success: true)
             } catch {
                 print("Unable to create dry run file at: \(dest.path)")
-                fetchStats.record(resource: resource, success: false)
+                fetchStats.record(assetResource: assetResource, success: false)
             }
             if (options.verbose) {
-                print("Dry Running: \(filename)")
+                print("Dry Running: \(assetResource.filename)")
             }
             dispatchGroup.leave()
             return
@@ -111,14 +124,14 @@ class PhotosFetch {
                     verb = "Symlink"
                     try FileManager.default.createSymbolicLink(at: dest, withDestinationURL: target)
                 }
-                fetchStats.record(resource: resource, success: true)
+                fetchStats.record(assetResource: assetResource, success: true)
             } catch {
                 print("Unable to create thin copy at \(dest.path)")
-                fetchStats.record(resource: resource, success: false)
+                fetchStats.record(assetResource: assetResource, success: false)
             }
                         
             if (options.verbose) {
-                print("\(verb.localizedCapitalized)ing: \(filename)")
+                print("\(verb.localizedCapitalized)ing: \(assetResource.filename)")
             }
             dispatchGroup.leave()
             return
@@ -127,7 +140,7 @@ class PhotosFetch {
         // Incremental operations with a valid base copy don't need to re-fetch
         if (options.incremental && !thinCopy && baseRefValid) {
             if (options.verbose) {
-                print("Skipping: \(filename)")
+                print("Base Exists: \(assetResource.filename)")
             }
             dispatchGroup.leave()
             return
@@ -141,13 +154,54 @@ class PhotosFetch {
             dispatchGroup.leave()
             return
         }
-        resourceManager.writeData(for: resource, toFile: dest, options: fetchOptions) { (error) in
-            self.fetchStats.record(resource: resource, success: (error == nil))
+        resourceManager.writeData(for: assetResource.resource, toFile: dest, options: fetchOptions) { (error) in
+            if (error != nil) {
+                print("Resource fetch error: \(dest.path)")
+                self.fetchStats.record(assetResource: assetResource, success: false)
+                self.dispatchGroup.leave()
+                return
+            }
+
+            // Success, unless we still need to verify
+            if (self.options.verify) {
+                if (assetResource.outdated()) {
+                    if (self.options.verbose) {
+                        print("Not Verifying: \(assetResource.filename)")
+                    }
+                } else {
+                    let verified = self.verify(assetResource: assetResource)
+                    self.fetchStats.record(assetResource: assetResource, success: verified)
+                }
+            } else {
+                self.fetchStats.record(assetResource: assetResource, success: true)
+            }
             self.dispatchGroup.leave()
         }
         if (options.verbose) {
-            print("Fetching: \(filename)")
+            print("Fetching: \(assetResource.filename)")
         }
+    }
+    
+    func verify(assetResource: AssetResource) -> Bool {
+        let dest = fetchPaths.resourceDest(assetResource: assetResource)
+        let target = fetchPaths.resourceTarget(assetResource: assetResource)
+        var verified = false
+
+        if (FileManager.default.contentsEqual(atPath: dest.path, andPath: target.path)) {
+            verified = true
+        } else {
+            verified = false
+            print("File content does not match: \(assetResource.filename)")
+        }
+        if (options.verbose) {
+            print("Verifying: \(assetResource.filename)")
+        }
+        do {
+            try FileManager.default.removeItem(at: dest)
+        } catch {
+            print("Unable to remove verify file: \(dest.path)")
+        }
+        return verified
     }
     
     func createAssetFolder(dest: URL) throws {
@@ -179,7 +233,7 @@ class PhotosFetch {
     }
     
     func validateResources(resources: [PHAssetResource], originalType: PHAssetResourceType, modifiedType: PHAssetResourceType? = nil) -> [PHAssetResource] {
-        let id = ResourceUtils.uuid(id: resources.first?.assetLocalIdentifier)
+        let id = AssetResource.uuid(id: resources.first?.assetLocalIdentifier)
         
         var valid: [PHAssetResource] = []
         let original = resources.filter { $0.type == originalType }
@@ -194,13 +248,13 @@ class PhotosFetch {
             } else {
                 // Videos are allowed a modifed still with no original still
                 if (resources.first?.type != .video && modified.count > 0 && modified.first?.type == PHAssetResourceType.fullSizePhoto) {
-                    print("No original resource: \(ResourceUtils.uuid(id: id))")
+                    print("No original resource: \(id)")
                 }
             }
             if (modified.count > 0) {
                 valid.append(modified.first!)
                 if (modified.count > 1) {
-                    print("Invalid modified resources: \(ResourceUtils.uuid(id: id))")
+                    print("Invalid modified resources: \(id)")
                 }
             }
         }

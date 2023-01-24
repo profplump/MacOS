@@ -7,18 +7,24 @@
 //
 
 import Foundation
+import Photos
 
 class FetchPaths {
-    var compareDate: Date?
     var baseFolder: URL
     var destFolder: URL
     var parentFolder: URL
     
-    init(compareDate: Date? = nil, baseFolder: URL? = nil, destFolder: URL? = nil, parentFolder: URL) {
-        self.compareDate = compareDate
+    init(baseFolder: URL? = nil, destFolder: URL? = nil, parentFolder: URL) {
         self.baseFolder = baseFolder ?? URL(fileURLWithPath: "")
         self.destFolder = destFolder ?? URL(fileURLWithPath: "")
         self.parentFolder = parentFolder
         self.parentFolder.standardize()
+    }
+    
+    func resourceDest(assetResource: AssetResource) -> URL {
+        return URL(fileURLWithPath: assetResource.filename, relativeTo: destFolder)
+    }
+    func resourceTarget(assetResource: AssetResource) -> URL {
+        return URL(fileURLWithPath: assetResource.filename, relativeTo: baseFolder)
     }
 }
