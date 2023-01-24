@@ -131,8 +131,11 @@ class PhotosSnapshot {
             var isDir: ObjCBool = true
             if (!FileManager.default.fileExists(atPath: fetchPaths.baseFolder.path, isDirectory: &isDir)) {
                 // TODO: stderr
-                print("Base folder does not exist: \(fetchPaths.baseFolder)")
+                print("Base folder does not exist: \(fetchPaths.baseFolder.path)")
                 exit(-1)
+            }
+            if (options.verbose) {
+                print("Base Folder: \(fetchPaths.baseFolder.path)")
             }
         }
         
@@ -191,14 +194,7 @@ class PhotosSnapshot {
         if (options.verbose) {
             print("Listing type \(mediaType.rawValue) assets")
         }
-
-        // Restrict the list when we are doing a non-linked incremental operation
-        var listDate: Date? = nil
-        if (options.incremental && !(options.clone || options.hardlink || options.symlink)) {
-            listDate = fetchPaths.compareDate
-        }
-
-        let assets = list.media(mediaType: mediaType, compareDate: listDate)
+        let assets = list.media(mediaType: mediaType)
         appendAssets(assets: assets)
         if (options.verbose) {
             print("Found \(assets.count) type \(mediaType.rawValue) assets")

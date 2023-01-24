@@ -39,16 +39,25 @@ class PhotosFetch {
             let asset = media.object(at: i)
             let resources = PHAssetResource.assetResources(for: asset)
             for resource in findSupportedResources(resources: resources) {
+                // Determine if base contains a plausibly valid copy of this resource
                 var baseAssetValid = false
-                if (fetchPaths.compareDate != nil && asset.creationDate != nil && asset.modificationDate != nil) {
-                    if (max(asset.creationDate!, asset.modificationDate!) < fetchPaths.compareDate!) {
-                        baseAssetValid = true
+                if (options.incremental) {
+                    var invalid = false
+                    let target = URL(fileURLWithPath: ResourceUtils.path(resource: resource), relativeTo: fetchPaths.baseFolder)
+                    // Exists
+                    if (!FileManager.default.fileExists(atPath: target.path)) {
+                        invalid = true
                     }
+                    // Is recent enough
+                    if (max(asset.creationDate ?? Date.distantFuture, asset.modificationDate ?? Date.distantFuture) >= fetchPaths.compareDate ??  Date.now) {
+                        invalid = true
+                    }
+                    baseAssetValid = !invalid
                 }
-                
+                    
                 dispatchGroup.enter()
                 DispatchQueue.global(qos: .utility).async {
-                    self.readFile(asset: asset, resource: resource, destFolder: fetchPaths.destFolder, baseFolder: fetchPaths.baseFolder, allowBaseReference: baseAssetValid)
+                    self.readFile(resource: resource, fetchPaths: fetchPaths, baseRefValid: baseAssetValid)
                 }
             }
         }
@@ -57,21 +66,10 @@ class PhotosFetch {
         return fetchStats
     }
     
-    func readFile(asset: PHAsset, resource: PHAssetResource, destFolder: URL, baseFolder: URL, allowBaseReference: Bool) {
+    func readFile(resource: PHAssetResource, fetchPaths: FetchPaths, baseRefValid: Bool) {
         let filename = ResourceUtils.path(resource: resource)
-        let dest = URL(fileURLWithPath: filename, relativeTo: destFolder)
-        let target = URL(fileURLWithPath: filename, relativeTo: baseFolder)
-        
-        // Ensure we have an asset folder
-        do {
-            try FileManager.default.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
-        } catch {
-            // TODO: stderr
-            fetchStats.record(resource: resource, success: false)
-            print("Unable to create asset folder: \(dest.deletingLastPathComponent().path)")
-            dispatchGroup.leave()
-            return
-        }
+        let dest = URL(fileURLWithPath: filename, relativeTo: fetchPaths.destFolder)
+        let target = URL(fileURLWithPath: filename, relativeTo: fetchPaths.baseFolder)
 
         // Do not overwrite
         if (FileManager.default.fileExists(atPath: dest.path)) {
@@ -82,8 +80,14 @@ class PhotosFetch {
         
         // Empty files for dry runs
         if (options.dryRun) {
-            FileManager.default.createFile(atPath: dest.path, contents: nil)
-            fetchStats.record(resource: resource, success: true)
+            do {
+                try createAssetFolder(dest: dest)
+                FileManager.default.createFile(atPath: dest.path, contents: nil)
+                fetchStats.record(resource: resource, success: true)
+            } catch {
+                print("Unable to create dry run file at: \(dest.path)")
+                fetchStats.record(resource: resource, success: false)
+            }
             if (options.verbose) {
                 print("Dry Running: \(filename)")
             }
@@ -92,10 +96,11 @@ class PhotosFetch {
         }
         
         // Handle all the thin-copy options, if we have a valid baseReference
-        let targetValid = (allowBaseReference && options.incremental && FileManager.default.fileExists(atPath: target.path))
-        if (targetValid && (options.clone || options.hardlink || options.symlink)) {
+        let thinCopy = (options.incremental && (options.clone || options.hardlink || options.symlink))
+        if (baseRefValid && thinCopy) {
             var verb = String()
             do {
+                try createAssetFolder(dest: dest)
                 if (options.clone) {
                     verb = "Clon"
                     try FileManager.default.copyItem(at: target, to: dest)
@@ -112,7 +117,7 @@ class PhotosFetch {
                 print("Unable to create thin copy at \(dest.path)")
                 fetchStats.record(resource: resource, success: false)
             }
-            
+                        
             if (options.verbose) {
                 print("\(verb.localizedCapitalized)ing: \(filename)")
             }
@@ -120,13 +125,37 @@ class PhotosFetch {
             return
         }
         
-        // Fetch to filesystem if we didn't find a better option above
+        // Incremental operations with a valid base copy don't need to re-fetch
+        if (options.incremental && !thinCopy && baseRefValid) {
+            if (options.verbose) {
+                print("Skipping: \(filename)")
+            }
+            dispatchGroup.leave()
+            return
+        }
+        
+        // Fetch to filesystem if we are still around
+        do {
+            try createAssetFolder(dest: dest)
+        } catch {
+            // TODO: stderr
+            print("Unable to create asset folder: \(dest.path)")
+            dispatchGroup.leave()
+            return
+        }
         resourceManager.writeData(for: resource, toFile: dest, options: fetchOptions) { (error) in
             self.fetchStats.record(resource: resource, success: (error == nil))
             self.dispatchGroup.leave()
         }
         if (options.verbose) {
             print("Fetching: \(filename)")
+        }
+    }
+    
+    func createAssetFolder(dest: URL) throws {
+        var isDir: ObjCBool = true
+        if (!FileManager.default.fileExists(atPath: dest.deletingLastPathComponent().path, isDirectory: &isDir)) {
+            try FileManager.default.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
         }
     }
     
