@@ -127,7 +127,7 @@ parent
 `-f 10`
 
 --date-format
-: A DateFormatter format string for use in naming snapshot folders. Default: yyyy-MM-dd_hh-mm-ss
+: A DateFormatter template for use in naming snapshot folders. Default: yyyy-MM-dd_HH-mm-ss
 
 `-d yyyy-MM-dd`
 

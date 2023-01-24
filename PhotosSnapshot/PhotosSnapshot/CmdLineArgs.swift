@@ -10,7 +10,7 @@ import ArgumentParser
 import Foundation
 
 let default_mediaTypes = "APV"
-let default_dateFormat = "yyyy-MM-dd_hh-mm-ss"
+let default_dateFormat = "yyyy-MM-dd_HH-mm-ss"
 
 @main
 struct CmdLineArgs: ParsableCommand {
@@ -41,7 +41,7 @@ struct CmdLineArgs: ParsableCommand {
     @Option(name: .shortAndLong, help: "Limit fetch requests to at most this many results. Default: 0 <unlimited>")
     var fetchLimit: Int?
     
-    @Option(name: .shortAndLong, help: "A DateFormatter format string for use in naming snapshot folders. Default: yyyy-MM-dd_hh-mm-ss")
+    @Option(name: .shortAndLong, help: "A DateFormatter template for use in naming snapshot folders. Default: yyyy-MM-dd_HH-mm-ss")
     var dateFormat: String = default_dateFormat
     
     @Option(name: .shortAndLong, help: "A date string, in the format specified in date-format, for use in incremental backups. This overrides folder-based date determinations")

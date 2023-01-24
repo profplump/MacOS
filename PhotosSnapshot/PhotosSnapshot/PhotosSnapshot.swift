@@ -90,7 +90,7 @@ class PhotosSnapshot {
             exit(-4)
         }
         
-        // Fetch to filesystem
+        // Fetch
         var exitError: Int32 = 0
         let fetch = PhotosFetch(cmdLineArgs: options, fetchPaths: fetchPaths, compareDate: compareDate)
         for assets in assetSets {
@@ -256,6 +256,12 @@ class PhotosSnapshot {
         }
     }
     
+    fileprivate func appendAssets(assets: PHFetchResult<PHAsset>) {
+        if (assets.count > 0) {
+            assetSets.append(assets)
+        }
+    }
+    
     fileprivate static func dateFormatterFactory(options: CmdLineArgs) -> DateFormatter {
         let df = DateFormatter()
         df.locale = Locale(identifier: "en_US_POSIX")
@@ -264,11 +270,5 @@ class PhotosSnapshot {
             print("Date Format: \(df.dateFormat!)")
         }
         return df
-    }
-    
-    fileprivate func appendAssets(assets: PHFetchResult<PHAsset>) {
-        if (assets.count > 0) {
-            assetSets.append(assets)
-        }
     }
 }
