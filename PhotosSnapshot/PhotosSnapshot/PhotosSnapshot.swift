@@ -47,7 +47,7 @@ class PhotosSnapshot {
             } else {
                 operation = "snapshot"
             }
-            print("\(operation.localizedCapitalized)ing to: \(fetchPaths.destFolder)")
+            print("\(operation.localizedCapitalized)ing to: \(fetchPaths.destFolder.path)")
         }
         
         // Make sure the filesystem supports our plans
@@ -146,18 +146,56 @@ class PhotosSnapshot {
             return
         }
         if (options.base == "RECENT") {
-            print("Base folder 'RECENT' is not supported. Yet.")
-            exit(-5)
-        } else {
-            fetchPaths.baseFolder = URL(fileURLWithPath: options.base!, relativeTo: fetchPaths.parentFolder)
-            var isDir: ObjCBool = true
-            if (!FileManager.default.fileExists(atPath: fetchPaths.baseFolder.path, isDirectory: &isDir)) {
-                print("Base folder does not exist: \(fetchPaths.baseFolder.path)")
+            var names: Set<String> = []
+            do {
+                // Find folders under parentFolder
+                let folders = try FileManager.default.contentsOfDirectory(at: fetchPaths.parentFolder, includingPropertiesForKeys: [URLResourceKey.isDirectoryKey])
+                for folder in folders {
+                    let isDir = try folder.resourceValues(forKeys: [.isDirectoryKey])
+                    if (isDir.isDirectory!) {
+                        names.insert(folder.lastPathComponent)
+                    }
+                }
+            } catch {
+                print("Unable to read contents of parent folder: \(fetchPaths.parentFolder.path)")
                 exit(-1)
             }
-            if (options.verbose) {
-                print("Base Folder: \(fetchPaths.baseFolder.path)")
+            
+            // Parse what we can into URLs and dates
+            var snapshots: [Date: URL] = [:]
+            for name in names {
+                let snapshotDate = dateFormatter.date(from: name)
+                if (snapshotDate == nil) {
+                    if (options.verbose) {
+                        print("Unable to parse snapshot date from: \(name)")
+                    }
+                } else {
+                    let snapshotURL = URL(fileURLWithPath: name, relativeTo: fetchPaths.parentFolder)
+                    snapshots.updateValue(snapshotURL, forKey: snapshotDate!)
+                }
             }
+            // Find the most recent
+            if (!snapshots.isEmpty) {
+                let latest = snapshots.keys.sorted().last!
+                if (options.verbose) {
+                    print("Latest Snapshot: \(latest)")
+                }
+                fetchPaths.baseFolder = snapshots[latest]!
+            } else {
+                print("Unable to find a recent snapshot in: \(fetchPaths.parentFolder.path)")
+                exit(-1)
+            }
+        } else {
+            fetchPaths.baseFolder = URL(fileURLWithPath: options.base!, relativeTo: fetchPaths.parentFolder)
+        }
+        
+        var isDir: ObjCBool = true
+        if (!FileManager.default.fileExists(atPath: fetchPaths.baseFolder.path, isDirectory: &isDir)) {
+            print("Base folder does not exist: \(fetchPaths.baseFolder.path)")
+            exit(-1)
+        }
+        if (options.verbose) {
+            print("Base Folder: \(fetchPaths.baseFolder.path)")
         }
     }
     
