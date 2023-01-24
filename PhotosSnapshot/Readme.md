@@ -41,13 +41,13 @@ This will create a new snapshot based on the most recent existing snapshot, by f
 
 --
 
-### Incremental Partial Snapshot
+### Incremental Sparse Snapshot
 
 `PhotosSnapshot --incremental -b <base> <parent>`
 
 `PhotosSnapshot --incremental -b 2023-01-11_12-13-14 /Volumes/BackupDisk/Snapshots`
 
-This will create a new, sparse snapshot by fetching assets that are missing or have been updated since the `<base>` snapshot timestamp (or `--compare-date`). Other assets are not fetched in a sparse snapshot, and would need to be manually integrated from `<base>` to produce a complete snapshot.
+This will create a new, sparse snapshot by fetching assets that are missing from or have been updated since the `<base>` snapshot timestamp (or `--compare-date`). Other assets are not fetched in a sparse snapshot, and would need to be manually integrated from `<base>` to produce a complete snapshot.
 
 --
 
