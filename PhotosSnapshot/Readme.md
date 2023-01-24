@@ -1,12 +1,12 @@
 # PhotosSnapshot
 
-PhotosSnapshot is a command-line tool for creating backups of Apple Photos assets. It can process both locally-stored files and iCloud data and is built on the PhotoKit SDK. It is intended to produce stand-alone filesystem-based backups of all assets in the Photos Library, and can produce Time Machine-like thin-copy snapshots for efficient but complete incremental snapshots.
+PhotosSnapshot is a command-line tool for creating backups of Apple's Photos Library assets. It can process both locally-stored and iCloud assets and is built on the PhotoKit SDK. It is intended to produce stand-alone filesystem-based backups of all assets in the Photos Library, and can produce Time Machine-like thin-copy snapshots for space-efficient but complete incremental snapshots.
 
-PhotosSnapshot creates a filesystem-based backup for Photos assets including audio, photos, videos, and live photos. The original, modified, and alternate (i.e. RAW) versions of all assets, if available, are copied to the destination folder. Assets are represented as folders and named according to the identifier used by PhotoKit[^1]. Resources are grouped into asset folders and named by type.
+PhotosSnapshot creates a filesystem-based backup for Photos assets including audio, photos, videos, and live photos. The original, modified, and alternate (i.e. RAW) versions of assets, if available, are copied to the destination folder. Assets are represented as folders and named according to the identifier used by PhotoKit[^1]. Resources are grouped into asset folders and named by type.
 
 [^1]: Which matches the asset UUID from the Photos Library SQLite DB, if you want to query against it for other metadata
 
-I wrote this tool to allow me to backup my iCloud-stored photos without using all the local storage required for "Download Originals to this Mac".
+I wrote this tool to allow me to backup iCloud-stored photos without using the local storage required for "Download Originals to this Mac".
 
 This project is not based on but was inspired by [PhotosExporter](https://github.com/abentele/PhotosExporter) by Andreas Bentele. Their tool makes similar lightweight snapshots but can only backup local assets. That workflow doesn't suit my needs but their project did convince me I could write a Swift PhotoKit app, which was very helpful.
 
@@ -16,7 +16,7 @@ This project is not based on but was inspired by [PhotosExporter](https://github
 
 1. Manually create a single snapshot: `PhotosSnapshot /Volumes/BackupDisk/Snapshots`
 1. Create a periodic (e.g. daily) incremental snapshot with: `PhotosSnapshot --clone -b LATEST /Volumes/BackupDisk/Snapshots`
-1. Run a period (e.g. monthly) verification, to ensure that the complete snapshot is intact: `PhotosSnapshot --verify -b LATEST /Volumes/BackupDisk/Snapshots`
+1. Run a periodic (e.g. monthly) verification, to ensure that the complete snapshot is intact: `PhotosSnapshot --verify -b LATEST /Volumes/BackupDisk/Snapshots`
 1. Manually remove any resources that `verify` complains about and replace them by appending assets with: `PhotosSnapshot --append -b LASTEST /Volumes/BackupDisk/Snapshots`, optionally using `--uuid` to specify the specific assets you want to re-fetch
 
 ### Create Snapshot
