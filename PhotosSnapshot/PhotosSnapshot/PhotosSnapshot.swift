@@ -92,8 +92,8 @@ class PhotosSnapshot {
         
         // Fetch
         var exitError: Int32 = 0
-        let fetch = PhotosFetch(cmdLineArgs: options, fetchPaths: fetchPaths, compareDate: compareDate)
         for assets in assetSets {
+            let fetch = PhotosFetch(cmdLineArgs: options, fetchPaths: fetchPaths, compareDate: compareDate)
             if (options.verbose) {
                 print("Fetching \(assets.count) assets")
             }
