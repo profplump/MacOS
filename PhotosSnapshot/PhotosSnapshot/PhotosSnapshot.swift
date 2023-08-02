@@ -11,12 +11,15 @@ import Photos
 
 class PhotosSnapshot {
     
+    enum Mode { case SNAPSHOT, INCREMENTAL, VERIFY }
+
     let options: CmdLineArgs
     let access: PhotosAccess
     let list: PhotosList
     let fetchPaths: FetchPaths
     let dateFormatter: DateFormatter
     var assetSets: [PHFetchResult<PHAsset>]
+    var mode: Mode
     
     init(options: CmdLineArgs) {
         self.options = options
@@ -25,6 +28,15 @@ class PhotosSnapshot {
         fetchPaths = FetchPaths(parentFolder: URL(fileURLWithPath: options.parent))
         dateFormatter = PhotosSnapshot.dateFormatterFactory(options: options)
         assetSets = []
+        
+        // Determine what we are doing
+        if (options.clone != nil || options.hardlink != nil || options.symlink != nil) {
+            mode = Mode.INCREMENTAL
+        } else if (options.verify != nil) {
+            mode = Mode.VERIFY
+        } else {
+            mode = Mode.SNAPSHOT
+        }
     }
 
     func main() {
@@ -37,39 +49,43 @@ class PhotosSnapshot {
         // Figure out where we are writing
         buildDestURL()
         if (options.verbose) {
-            var operation: String
-            if (options.append) {
-                operation = "append"
-            } else if (options.incremental) {
-                operation = "incremental"
-            } else if (options.verify) {
-                operation = "verify"
-            } else {
-                operation = "snapshot"
-            }
-            print("\(operation.localizedCapitalized)ing to: \(fetchPaths.destFolder.path)")
+            print("\(mode)ing to: \(fetchPaths.destFolder.path)")
         }
         
         // Make sure the filesystem supports our plans
-        do {
-            let volCapabilities = try fetchPaths.parentFolder.resourceValues(forKeys: [ .volumeSupportsSymbolicLinksKey, .volumeSupportsHardLinksKey, .volumeSupportsFileCloningKey])
-            if (options.clone && !volCapabilities.volumeSupportsFileCloning!) {
-                print("Clone requested but volume does not support clonefile()")
-                return
-            } else if (options.hardlink && !volCapabilities.volumeSupportsHardLinks!) {
-                print("Hardlink requested but volume does not support hardlinks")
-                return
-            } else if (options.symlink && !volCapabilities.volumeSupportsSymbolicLinks!) {
-                print("Symlink requested but volume does not support symlinks")
+        if (mode == Mode.INCREMENTAL) {
+            do {
+                let volCapabilities = try fetchPaths.parentFolder.resourceValues(forKeys: [ .volumeSupportsSymbolicLinksKey, .volumeSupportsHardLinksKey, .volumeSupportsFileCloningKey])
+                if (options.clone != nil && !volCapabilities.volumeSupportsFileCloning!) {
+                    print("Clone requested but volume does not support clonefile()")
+                    return
+                } else if (options.hardlink != nil && !volCapabilities.volumeSupportsHardLinks!) {
+                    print("Hardlink requested but volume does not support hardlinks")
+                    return
+                } else if (options.symlink != nil && !volCapabilities.volumeSupportsSymbolicLinks!) {
+                    print("Symlink requested but volume does not support symlinks")
+                    return
+                }
+            } catch {
+                print("Error determining volume support for thin copies: \(error)")
                 return
             }
-        } catch {
-            print("Error determining volume support for thin copies: \(error)")
-            return
         }
         
         // Parse the baseFolder and compareDate
-        validateBaseURL()
+        if (mode == Mode.VERIFY) {
+            validateBaseURL(base: options.verify!)
+        } else if (mode == Mode.INCREMENTAL) {
+            var base: String = ""
+            if (options.clone != nil) {
+                base = options.clone!
+            } else if (options.hardlink != nil) {
+                base = options.hardlink!
+            } else if (options.symlink != nil) {
+                base = options.symlink!
+            }
+            validateBaseURL(base: base)
+        }
         let compareDate = parseCompareDate()
         
         // Figure out what assets we are fetching
@@ -118,7 +134,7 @@ class PhotosSnapshot {
     func parseCompareDate() -> Date? {
         var compareDate: Date? = nil
         // Parse a modification date from the base folder date
-        if (options.incremental || options.verify) {
+        if (mode == Mode.INCREMENTAL || mode == Mode.VERIFY) {
             var compareString: String
             if (options.compareDate != nil) {
                 compareString = options.compareDate!
@@ -141,52 +157,53 @@ class PhotosSnapshot {
         return compareDate
     }
     
-    func validateBaseURL() {
-        if (options.base == nil) {
-            return
+    func findMostRecent(parentFolder: URL) -> URL {
+        var names: Set<String> = []
+        do {
+            // Find folders under parentFolder
+            let folders = try FileManager.default.contentsOfDirectory(at: parentFolder, includingPropertiesForKeys: [URLResourceKey.isDirectoryKey])
+            for folder in folders {
+                let isDir = try folder.resourceValues(forKeys: [.isDirectoryKey])
+                if (isDir.isDirectory!) {
+                    names.insert(folder.lastPathComponent)
+                }
+            }
+        } catch {
+            print("Unable to read contents of parent folder: \(parentFolder.path)")
+            exit(-1)
         }
-        if (options.base == "RECENT") {
-            var names: Set<String> = []
-            do {
-                // Find folders under parentFolder
-                let folders = try FileManager.default.contentsOfDirectory(at: fetchPaths.parentFolder, includingPropertiesForKeys: [URLResourceKey.isDirectoryKey])
-                for folder in folders {
-                    let isDir = try folder.resourceValues(forKeys: [.isDirectoryKey])
-                    if (isDir.isDirectory!) {
-                        names.insert(folder.lastPathComponent)
-                    }
-                }
-            } catch {
-                print("Unable to read contents of parent folder: \(fetchPaths.parentFolder.path)")
-                exit(-1)
-            }
-            
-            // Parse what we can into URLs and dates
-            var snapshots: [Date: URL] = [:]
-            for name in names {
-                let snapshotDate = dateFormatter.date(from: name)
-                if (snapshotDate == nil) {
-                    if (options.verbose) {
-                        print("Unable to parse snapshot date from: \(name)")
-                    }
-                } else {
-                    let snapshotURL = URL(fileURLWithPath: name, relativeTo: fetchPaths.parentFolder)
-                    snapshots.updateValue(snapshotURL, forKey: snapshotDate!)
-                }
-            }
-            // Find the most recent
-            if (!snapshots.isEmpty) {
-                let latest = snapshots.keys.sorted().last!
+        
+        // Parse what we can into URLs and dates
+        var snapshots: [Date: URL] = [:]
+        for name in names {
+            let snapshotDate = dateFormatter.date(from: name)
+            if (snapshotDate == nil) {
                 if (options.verbose) {
-                    print("Latest Snapshot: \(latest)")
+                    print("Unable to parse snapshot date from: \(name)")
                 }
-                fetchPaths.baseFolder = snapshots[latest]!
             } else {
-                print("Unable to find a recent snapshot in: \(fetchPaths.parentFolder.path)")
-                exit(-1)
+                let snapshotURL = URL(fileURLWithPath: name, relativeTo: parentFolder)
+                snapshots.updateValue(snapshotURL, forKey: snapshotDate!)
             }
+        }
+        // Find the most recent
+        if (!snapshots.isEmpty) {
+            let latest = snapshots.keys.sorted().last!
+            if (options.verbose) {
+                print("Latest Snapshot: \(latest)")
+            }
+            return snapshots[latest]!
         } else {
-            fetchPaths.baseFolder = URL(fileURLWithPath: options.base!, relativeTo: fetchPaths.parentFolder)
+            print("Unable to find a recent snapshot in: \(parentFolder.path)")
+            exit(-1)
+        }
+    }
+    
+    func validateBaseURL(base: String) {
+        if (base == "RECENT") {
+            fetchPaths.baseFolder = findMostRecent(parentFolder: fetchPaths.parentFolder)
+        } else {
+            fetchPaths.baseFolder = URL(fileURLWithPath: base, relativeTo: fetchPaths.parentFolder)
         }
         
         var isDir: ObjCBool = true
@@ -200,19 +217,35 @@ class PhotosSnapshot {
     }
     
     func buildDestURL() {
-        // Only append re-uses a snapshot destination
-        var subFolder = String();
-        if (options.append) {
-            subFolder = fetchPaths.baseFolder.lastPathComponent
-        } else {
-            subFolder = dateFormatter.string(from: Date())
-        }
-
         // Use a temp path if we are verifying
-        if (options.verify) {
-            fetchPaths.destFolder = FileManager.default.temporaryDirectory.appendingPathComponent("PhotosSnapshot/" + subFolder, isDirectory: true)
+        if (options.verify != nil) {
+            fetchPaths.destFolder = FileManager.default.temporaryDirectory.appendingPathComponent("PhotosSnapshot/", isDirectory: true)
+            return
+        }
+        
+        // Create a new folder unless we are appending
+        if (options.append != nil) {
+            if (options.append == "RECENT") {
+                fetchPaths.destFolder = findMostRecent(parentFolder: fetchPaths.parentFolder)
+            } else {
+                fetchPaths.destFolder = fetchPaths.parentFolder.appendingPathComponent(options.append!, isDirectory: true)
+            }
         } else {
-            fetchPaths.destFolder = fetchPaths.parentFolder.appendingPathComponent(subFolder, isDirectory: true)
+            fetchPaths.destFolder = fetchPaths.parentFolder.appendingPathComponent(dateFormatter.string(from: Date()), isDirectory: true)
+        }
+        
+        // Verify that the destFolder exists (or doesn't exist) like we expect
+        var isDir: ObjCBool = true
+        let exists: Bool = FileManager.default.fileExists(atPath: fetchPaths.destFolder.path, isDirectory: &isDir)
+        var error: String? = nil
+        if (exists && options.append == nil) {
+            error = "Subfolder exists"
+        } else if (!exists && options.append != nil) {
+            error = "Invalid append folder"
+        }
+        if (error != nil) {
+            print("\(error!): \(fetchPaths.destFolder.path)")
+            exit(-1)
         }
     }
     

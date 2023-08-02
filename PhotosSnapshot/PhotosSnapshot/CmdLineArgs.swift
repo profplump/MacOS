@@ -16,21 +16,19 @@ let default_dateFormat = "yyyy-MM-dd_HH-mm-ss"
 struct CmdLineArgs: ParsableCommand {
     @Argument(help: "Destination parent folder. Snapshots are created in folders under this path")
     var parent: String
+
+    @Option(name: .shortAndLong, help: "Append this existing snapshot (path relative to `<parent>`) instead of creating a new snapshot folder")
+    var append: String?
     
-    @Option(name: .shortAndLong, help: "An existing snapshot path, relative to <parent>. Required for append, incremental, and verify operations. Use the keyword RECENT to select the most recent snapshot in <parent>")
-    var base: String?
+    @Option(name: .long, help: "Use APFS clones to resources in this existing snapshot (path relative to `<parent>`) to create a complete snapshot without re-fetching unchanged resources. Fetches only resources that have changed since the timestamp of `<base>` or the provided `--incremental-date`")
+    var clone: String?
+    @Option(name: .long, help: "Use hardlinks to resources in this existing snapshot (path relative to `<parent>`) to create a complete snapshot without re-fetching unchanged resources. Fetches only resources that have changed since the timestamp of `<base>` or the provided `--incremental-date`")
+    var hardlink: String?
+    @Option(name: .long, help: "Use symlinks to resources in this existing snapshot (path relative to `<parent>`) to create a complete snapshot without re-fetching unchanged resources. Fetches only resources that have changed since the timestamp of `<base>` or the provided `--incremental-date`")
+    var symlink: String?
     
-    @Flag(name: .long, help: "Append the existing snapshot at <base>")
-    var append: Bool = false
-        
-    @Flag(name: .long, help: "Create a new incremental backup using <base> as a prior snapshot. Fetches only resources that have changed since the timestamp of `<base>` or the provided `--incremental-date`")
-    var incremental: Bool = false
-    @Flag(name: .long, help: "Use APFS clones to resources in `<base>` to create a complete snapshot without re-fetching unchanged resources. Implies --incremental")
-    var clone: Bool = false
-    @Flag(name: .long, help: "Use hardlinks to resources in `<base>` to create a complete snapshot without re-fetching unchanged resources. Implies --incremental")
-    var hardlink: Bool = false
-    @Flag(name: .long, help: "Use symlinks to resources in `<base>` to create a complete snapshot without re-fetching unchanged resources. Implies --incremental")
-    var symlink: Bool = false
+    @Option(name: .long, help: "Verify the content of this existing snapshot (path relative to `<parent>`). Ignores assets newer than the snapshot timestamp (or `--compare-date`)")
+    var verify: String?
 
     @Option(name: .shortAndLong, parsing: .remaining, help: "One or more UUIDs to fetch. This option does not support the media-types filter. This option must appear last -- any remaining arguments are treated as UUIDs")
     var uuid: [String] = []
@@ -58,9 +56,6 @@ struct CmdLineArgs: ParsableCommand {
     
     @Flag(name: .long, help: "Do not fetch resource content, just create empty files")
     var dryRun: Bool = false
-    
-    @Flag(name: .long, help: "Verify the content of an existing snapshot at <base>. Ignores assets newer than the snapshot timestamp (or --compare-date)")
-    var verify: Bool = false
         
     @Flag(name: .shortAndLong, help: "Print additional runtime information")
     var verbose: Bool = false
@@ -99,18 +94,8 @@ struct CmdLineArgs: ParsableCommand {
         }
 
         // Try to ensure these options are sensible
-        if (clone || symlink || hardlink) {
-            incremental = true
-        }
-        if (base != nil && (!append && !incremental && !verify)) {
-            append = true
-        }
-        if ((verify && incremental) || (verify && append) || (append && incremental)) {
-            print("Append, incremental, and verify operations are mutually exclusive")
-            return
-        }
-        if ((append || incremental || verify) && base == nil) {
-            print("Append, incremental, and verify operations require a -b <base> folder")
+        if (verify != nil && (clone != nil || symlink != nil || hardlink != nil)) {
+            print("Incremental and verify operations are mutually exclusive")
             return
         }
         if (!uuid.isEmpty) {

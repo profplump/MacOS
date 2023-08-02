@@ -47,7 +47,7 @@ class PhotosFetch {
 
                 // Determine if base contains a plausibly valid copy of this resource
                 var baseAssetValid = false
-                if (options.incremental) {
+                if (options.clone != nil || options.hardlink != nil || options.symlink != nil) {
                     let target = fetchPaths.resourceTarget(assetResource: assetResource)
                     if (FileManager.default.fileExists(atPath: target.path) && !assetResource.outdated()) {
                         baseAssetValid = true
@@ -65,7 +65,7 @@ class PhotosFetch {
         dispatchGroup.wait()
         
         // Clean up our verify temp directory
-        if (options.verify) {
+        if (options.verify != nil) {
             do {
                 try FileManager.default.removeItem(at: fetchPaths.destFolder)
             } catch {
@@ -109,18 +109,18 @@ class PhotosFetch {
         }
         
         // Handle all the thin-copy options, if we have a valid baseReference
-        let thinCopy = (options.incremental && (options.clone || options.hardlink || options.symlink))
-        if (baseRefValid && thinCopy) {
+        let incremental = (options.clone != nil || options.hardlink != nil || options.symlink != nil)
+        if (baseRefValid && incremental) {
             var verb = String()
             do {
                 try createAssetFolder(dest: dest)
-                if (options.clone) {
+                if (options.clone != nil) {
                     verb = "Clon"
                     try FileManager.default.copyItem(at: target, to: dest)
-                } else if (options.hardlink) {
+                } else if (options.hardlink != nil) {
                     verb = "Hardlink"
                     try FileManager.default.linkItem(at: target, to: dest)
-                } else if (options.symlink) {
+                } else if (options.symlink != nil) {
                     verb = "Symlink"
                     try FileManager.default.createSymbolicLink(at: dest, withDestinationURL: target)
                 }
@@ -132,15 +132,6 @@ class PhotosFetch {
                         
             if (options.verbose) {
                 print("\(verb.localizedCapitalized)ing: \(assetResource.filename)")
-            }
-            dispatchGroup.leave()
-            return
-        }
-        
-        // Incremental operations with a valid base copy don't need to re-fetch
-        if (options.incremental && !thinCopy && baseRefValid) {
-            if (options.verbose) {
-                print("Base Exists: \(assetResource.filename)")
             }
             dispatchGroup.leave()
             return
@@ -163,7 +154,7 @@ class PhotosFetch {
             }
 
             // Success, unless we still need to verify
-            if (self.options.verify) {
+            if (self.options.verify != nil) {
                 if (assetResource.outdated()) {
                     if (self.options.verbose) {
                         print("Not Verifying: \(assetResource.filename)")
